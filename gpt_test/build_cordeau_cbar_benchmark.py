@@ -343,6 +343,7 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
             "eligibility": "all public depots",
             "emission_parameters": {"theta": 1.0, "rho_empty": 0.9, "rho_full": 1.5},
             "reference_emission": ref_e,
+            "reference_emission_per_depot": {str(k): v for k, v in per_depot_e0.items()},
             "prices": {"buy": P_BUY, "sell": P_SELL},
             "scenario_seeds": {
                 "train": STREAM_BASE["train"] + idx,
@@ -359,6 +360,7 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
         write_json(base_path, base)
         manifest_rows.append({"experiment": "E5b", "instance": name, "variant": "base", "file": str(base_path.relative_to(out)), "sha256": sha256(base_path), "reference_route": ref_type})
 
+        e0_total = sum(per_depot_e0.values())
         for gamma in BUDGET_FACTORS:
             for tau in CAPACITY_SCALES:
                 arcs = [
@@ -366,13 +368,22 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
                     for a in graph
                 ]
                 variant = f"g{gamma:.2f}_t{tau:.2f}".replace(".", "p")
+                corp_budget = gamma * ref_e
+                # Same 45%/160%-of-proportional-allocation rule as the
+                # synthetic suites (code/carbon.py, subsec:experimental_setup)
+                # -- E5b's own paragraph doesn't restate it, but nothing in
+                # it overrides the general budget parameterisation either.
+                alloc = {d: corp_budget * e / e0_total for d, e in per_depot_e0.items()} if e0_total > 0 else {}
+                bounds = {str(d): [0.45 * a, 1.60 * a] for d, a in alloc.items()}
                 overlay = {
                     "benchmark_version": "CBAR-MDVRP-PUBLIC-v1.0",
                     "experiment": "E5b-public-backbone-CBAR",
                     "source_instance": name,
                     "base_file": "base.json",
-                    "corporate_budget": gamma * ref_e,
+                    "corporate_budget": corp_budget,
                     "budget_factor": gamma,
+                    "depot_budget_allocation": {str(d): a for d, a in alloc.items()},
+                    "depot_budget_bounds": bounds,
                     "transfer_capacity_scale": tau,
                     "transfer_arcs": arcs,
                 }

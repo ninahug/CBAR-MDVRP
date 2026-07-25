@@ -78,10 +78,9 @@ def run_one(path: str, eval_subsample: int, alns_iterations: int, price_rounds: 
 
         val_scenarios = inst.scenarios("validation")[:eval_subsample]
         test_scenarios = inst.scenarios("test")[:eval_subsample]
-        val_eval = out_of_sample_eval(inst, B_star, val_scenarios, max(20, alns_iterations // 2),
-                                       1, seed + 1)
-        test_eval = out_of_sample_eval(inst, B_star, test_scenarios, max(20, alns_iterations // 2),
-                                        1, seed + 2)
+        eval_iterations = max(15, alns_iterations // 4)
+        val_eval = out_of_sample_eval(inst, B_star, val_scenarios, eval_iterations, 1, seed + 1)
+        test_eval = out_of_sample_eval(inst, B_star, test_scenarios, eval_iterations, 1, seed + 2)
         runtime = time.time() - t0
 
         row[f"train{train_size}"] = {
@@ -104,10 +103,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E3")
     ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage3_e3\stage3_e3_results.jsonl")
-    ap.add_argument("--eval-subsample", type=int, default=40)
-    ap.add_argument("--alns-iterations", type=int, default=100)
+    ap.add_argument("--eval-subsample", type=int, default=10)
+    ap.add_argument("--alns-iterations", type=int, default=60)
     ap.add_argument("--price-rounds", type=int, default=2)
-    ap.add_argument("--outer-rounds", type=int, default=3)
+    ap.add_argument("--outer-rounds", type=int, default=2)
     ap.add_argument("--seed", type=int, default=91001)
     args = ap.parse_args()
 
