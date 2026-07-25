@@ -128,7 +128,7 @@ def write_json(path: Path, obj: object) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=Path("CBAR_MDVRP_DATA_v1"))
+    ap.add_argument("--out", type=Path, default=Path(r"D:\CBAR_MDVRP\data\generated\synthetic_v1"))
     ap.add_argument("--suites", nargs="*", default=None,
                      help="restrict to a subset of suites, e.g. --suites E1 E2")
     args = ap.parse_args()

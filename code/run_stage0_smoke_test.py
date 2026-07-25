@@ -29,7 +29,7 @@ def close_enough(a: float, b: float, rel: float = 1e-6, abs_tol: float = 1e-6) -
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else r"D:\CBAR_MDVRP\data\CBAR_MDVRP_DATA_v1\E1\e1_c10_d2_w3_g1.json"
+    path = sys.argv[1] if len(sys.argv) > 1 else r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E1\e1_c10_d2_w3_g1.json"
     inst = load_instance(path)
     print(f"loaded {inst.suite}/{inst.name}: C={inst.n_customers} D={inst.n_depots} "
           f"vehicles={len(inst.vehicles)}")

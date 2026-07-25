@@ -37,9 +37,9 @@ def row_key(instance: str, seed: int, method: str) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\CBAR_MDVRP_DATA_v1\E2")
-    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\stage2_e2_results.jsonl")
-    ap.add_argument("--diagnostics-out", default=r"D:\CBAR_MDVRP\data\stage2_e2_diagnostics.jsonl")
+    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E2")
+    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage2_e2\stage2_e2_results.jsonl")
+    ap.add_argument("--diagnostics-out", default=r"D:\CBAR_MDVRP\data\results\stage2_e2\stage2_e2_diagnostics.jsonl")
     ap.add_argument("--seeds", type=int, nargs="*", default=methods.FROZEN_SEEDS[:3])
     ap.add_argument("--methods", nargs="*", default=methods.ALL_METHODS)
     ap.add_argument("--outer-rounds", type=int, default=2)

@@ -131,7 +131,7 @@ def check_stream_separation(instances: list[dict]) -> list[str]:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=Path("CBAR_MDVRP_DATA_v1"))
+    ap.add_argument("--out", type=Path, default=Path(r"D:\CBAR_MDVRP\data\generated\synthetic_v1"))
     args = ap.parse_args()
 
     manifest_path = args.out / "release_manifest.csv"

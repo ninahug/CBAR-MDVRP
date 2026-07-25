@@ -326,6 +326,39 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
             routes, ref_e = nearest_depot_reference(inst)
         graph = mst_plus_nearest(inst)
         per_depot_e0 = per_depot_reference_emission(inst, routes)
+
+        # Geometry, eligibility, and scenario draws do not depend on
+        # (budget_factor, capacity_scale); computing and storing them once
+        # per instance instead of once per of the 9 grid cells avoids both
+        # redundant correlated_scenarios() sampling (9x wasted compute) and
+        # redundant on-disk storage of identical 50+200+800-scenario banks
+        # (this is what previously made E5b_cbar ~480MB instead of ~50MB).
+        base = {
+            "benchmark_version": "CBAR-MDVRP-PUBLIC-v1.0",
+            "experiment": "E5b-public-backbone-CBAR",
+            "source_instance": name,
+            "source_reference_type": ref_type,
+            "published_bks_distance": published_bks,
+            "retained_public_data": asdict(inst),
+            "eligibility": "all public depots",
+            "emission_parameters": {"theta": 1.0, "rho_empty": 0.9, "rho_full": 1.5},
+            "reference_emission": ref_e,
+            "prices": {"buy": P_BUY, "sell": P_SELL},
+            "scenario_seeds": {
+                "train": STREAM_BASE["train"] + idx,
+                "validation": STREAM_BASE["validation"] + idx,
+                "test": STREAM_BASE["test"] + idx,
+            },
+            "scenarios": {
+                "train": correlated_scenarios(inst, TRAIN_N, STREAM_BASE["train"] + idx),
+                "validation": correlated_scenarios(inst, VALID_N, STREAM_BASE["validation"] + idx),
+                "test": correlated_scenarios(inst, TEST_N, STREAM_BASE["test"] + idx),
+            },
+        }
+        base_path = out / "E5b_cbar" / name / "base.json"
+        write_json(base_path, base)
+        manifest_rows.append({"experiment": "E5b", "instance": name, "variant": "base", "file": str(base_path.relative_to(out)), "sha256": sha256(base_path), "reference_route": ref_type})
+
         for gamma in BUDGET_FACTORS:
             for tau in CAPACITY_SCALES:
                 arcs = [
@@ -333,34 +366,18 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
                     for a in graph
                 ]
                 variant = f"g{gamma:.2f}_t{tau:.2f}".replace(".", "p")
-                obj = {
+                overlay = {
                     "benchmark_version": "CBAR-MDVRP-PUBLIC-v1.0",
                     "experiment": "E5b-public-backbone-CBAR",
                     "source_instance": name,
-                    "source_reference_type": ref_type,
-                    "published_bks_distance": published_bks,
-                    "retained_public_data": asdict(inst),
-                    "eligibility": "all public depots",
-                    "emission_parameters": {"theta": 1.0, "rho_empty": 0.9, "rho_full": 1.5},
-                    "reference_emission": ref_e,
+                    "base_file": "base.json",
                     "corporate_budget": gamma * ref_e,
                     "budget_factor": gamma,
-                    "prices": {"buy": P_BUY, "sell": P_SELL},
                     "transfer_capacity_scale": tau,
                     "transfer_arcs": arcs,
-                    "scenario_seeds": {
-                        "train": STREAM_BASE["train"] + idx,
-                        "validation": STREAM_BASE["validation"] + idx,
-                        "test": STREAM_BASE["test"] + idx,
-                    },
-                    "scenarios": {
-                        "train": correlated_scenarios(inst, TRAIN_N, STREAM_BASE["train"] + idx),
-                        "validation": correlated_scenarios(inst, VALID_N, STREAM_BASE["validation"] + idx),
-                        "test": correlated_scenarios(inst, TEST_N, STREAM_BASE["test"] + idx),
-                    },
                 }
                 path = out / "E5b_cbar" / name / f"{variant}.json"
-                write_json(path, obj)
+                write_json(path, overlay)
                 manifest_rows.append({"experiment": "E5b", "instance": name, "variant": variant, "file": str(path.relative_to(out)), "sha256": sha256(path), "reference_route": ref_type})
     with (out / "converted_manifest.csv").open("w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=manifest_rows[0].keys()); w.writeheader(); w.writerows(manifest_rows)

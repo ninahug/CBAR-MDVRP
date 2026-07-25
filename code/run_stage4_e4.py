@@ -30,8 +30,8 @@ def row_key(instance: str, method: str) -> str:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\CBAR_MDVRP_DATA_v1\E4")
-    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\stage4_e4_results.jsonl")
+    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E4")
+    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage4_e4\stage4_e4_results.jsonl")
     ap.add_argument("--methods", nargs="*", default=["PPBRC", "Cost-only"])
     ap.add_argument("--seed", type=int, default=91001)
     ap.add_argument("--outer-rounds", type=int, default=3)

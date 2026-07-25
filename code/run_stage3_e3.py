@@ -102,8 +102,8 @@ def run_one(path: str, eval_subsample: int, alns_iterations: int, price_rounds: 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\CBAR_MDVRP_DATA_v1\E3")
-    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\stage3_e3_results.jsonl")
+    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E3")
+    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage3_e3\stage3_e3_results.jsonl")
     ap.add_argument("--eval-subsample", type=int, default=40)
     ap.add_argument("--alns-iterations", type=int, default=100)
     ap.add_argument("--price-rounds", type=int, default=2)

@@ -72,8 +72,8 @@ def run_one(path: str, time_limit: float, alns_iterations: int) -> dict:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\CBAR_MDVRP_DATA_v1\E1")
-    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\stage1_e1_results.jsonl")
+    ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E1")
+    ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage1_e1\stage1_e1_results.jsonl")
     ap.add_argument("--time-limit", type=float, default=90.0)
     ap.add_argument("--alns-iterations", type=int, default=200)
     args = ap.parse_args()
