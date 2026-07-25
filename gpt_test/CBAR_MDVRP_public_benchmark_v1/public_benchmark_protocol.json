@@ -1,0 +1,81 @@
+{
+  "version": "CBAR-MDVRP-PUBLIC-v1.0",
+  "status": "frozen-protocol",
+  "public_source": {
+    "family": "Cordeau MDVRP",
+    "primary_repository": "NEO Research Group MDVRP instances",
+    "instance_url": "https://neo.lcc.uma.es/vrp/wp-content/data/instances/cordeau/C-mdvrp.zip",
+    "solution_url": "https://neo.lcc.uma.es/vrp/wp-content/data/instances/cordeau/C-mdvrp-sol.zip",
+    "format_reference": "https://neo.lcc.uma.es/vrp/vrp-instances/description-for-files-of-cordeaus-instances/",
+    "original_paper": "Cordeau, Gendreau and Laporte (1997), Networks 30(2), 105-119"
+  },
+  "E5a_classic_regression": {
+    "instances": "all 33 Cordeau MDVRP instances",
+    "scenario_count": 1,
+    "carbon_layer": "disabled",
+    "accounting_layer": "disabled",
+    "objective": "original Euclidean route duration/distance",
+    "reference": "published best-known solution",
+    "metrics": [
+      "best gap to BKS",
+      "mean gap over search seeds",
+      "feasibility rate",
+      "vehicle-count compliance",
+      "capacity compliance",
+      "route-duration compliance",
+      "runtime"
+    ],
+    "purpose": "validate the routing engine on the unmodified public problem; not evidence for the carbon mechanism"
+  },
+  "E5b_public_backbone_cbar": {
+    "instances": ["p01", "p02", "p03", "p12", "p04", "p05", "p06", "p07", "p15", "p18", "p21"],
+    "retained_public_fields": [
+      "customer coordinates",
+      "depot coordinates",
+      "mean demands",
+      "vehicle capacity",
+      "maximum route duration",
+      "maximum vehicle count"
+    ],
+    "training_scenarios": 50,
+    "validation_scenarios": 200,
+    "sealed_test_scenarios": 800,
+    "demand_model": {
+      "distribution": "mean-corrected correlated lognormal multipliers applied to public demands",
+      "customer_idiosyncratic_cv": 0.10,
+      "depot_common_cv": 0.25,
+      "cross_depot_correlation": 0.25,
+      "truncation": "resample only when a single demand exceeds vehicle capacity or aggregate fleet feasibility fails"
+    },
+    "carbon_overlay": {
+      "emission_model": "same load-dependent model as the main paper",
+      "reference_emission": "computed from the public BKS route file under mean demand when parseable; otherwise from the frozen deterministic fallback heuristic",
+      "budget_factors": [0.90, 1.00, 1.10],
+      "prices": {"buy": 9.0, "sell": 2.0},
+      "transfer_graph": "bidirected Euclidean minimum-spanning tree plus each depot's nearest omitted neighbour",
+      "transfer_friction": "0.15 + 0.35 times normalized depot distance",
+      "capacity_scales": [0.60, 1.00, 1.40]
+    },
+    "methods": ["SAA-ALNS", "PH-ALNS", "PPBRC-core", "PPBRC"],
+    "search_seeds": [91001, 91002, 91003, 91004, 91005],
+    "metrics": [
+      "in-sample expected objective",
+      "sealed out-of-sample expected objective",
+      "standard error and 95% confidence interval",
+      "external purchase and sale",
+      "internal transfer",
+      "cross-depot service share",
+      "price dispersion",
+      "anytime objective",
+      "runtime"
+    ],
+    "comparison_rule": "BKS gaps are not reported for the augmented CBAR objective; all algorithms are compared on identical derived instances"
+  },
+  "prohibited_changes": [
+    "no coordinate perturbation",
+    "no deletion of public customers or depots",
+    "no instance filtering after results are observed",
+    "no tuning on sealed test scenarios",
+    "no comparison of augmented CBAR objective with original MDVRP BKS"
+  ]
+}

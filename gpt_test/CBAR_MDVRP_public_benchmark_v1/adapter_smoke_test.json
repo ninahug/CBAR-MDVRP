@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "customers": 4,
+  "depots": 2,
+  "scenarios": 5,
+  "arcs": 2,
+  "reference_emission": 7.064406922210657
+}

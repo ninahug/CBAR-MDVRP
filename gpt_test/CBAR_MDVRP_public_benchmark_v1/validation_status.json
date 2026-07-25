@@ -1,0 +1,11 @@
+{
+  "protocol_version": "CBAR-MDVRP-PUBLIC-v1.0",
+  "adapter_syntax": "PASS",
+  "adapter_smoke_test": "PASS",
+  "tex_compile": "PASS",
+  "pdf_render_review": "PASS",
+  "public_source_archive_materialized": false,
+  "public_numerical_E5a_completed": false,
+  "public_numerical_E5b_completed": false,
+  "note": "The public-source archive could not be fetched in the current runtime. The frozen adapter accepts the official archives or extracted folders and records SHA-256 provenance. Numerical public-benchmark claims must remain blank until those files are materialized and the frozen runs are completed."
+}

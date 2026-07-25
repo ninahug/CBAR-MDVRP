@@ -1,0 +1,15 @@
+# Generated data (regenerate via code/build_data_release.py and
+# gpt_test/build_cordeau_cbar_benchmark.py) -- too large/bulky for git.
+data/
+
+# Python
+__pycache__/
+*.pyc
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.synctex.gz
