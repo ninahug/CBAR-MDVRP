@@ -218,115 +218,168 @@ and Section~\ref{sec:conclusion} concludes.
 \section{Literature Review}
 \label{sec:literature_review}
 
-This paper sits at the intersection of three literatures: emission-aware
-vehicle routing, multi-depot routing, and stochastic routing under demand
-uncertainty. Section~\ref{subsec:carbon_routing} reviews how carbon enters
-routing models and why an internally allocated budget differs from the
-exogenous carbon costs normally assumed.
-Section~\ref{subsec:stochastic_routing} reviews recourse under demand
-uncertainty and identifies what changes when the first-stage decision is an
-accounting entitlement rather than a route plan.
-Table~\ref{tab:literature_taxonomy} summarises the positioning.
+Three literatures bear on the problem studied here. Section~\ref{subsec:carbon_routing}
+reviews how carbon has been brought into routing and, separately, into
+operational models of regulatory compliance, and explains why an internally
+allocated budget is not the same object as an exogenous carbon price or a
+single firm-level cap. Section~\ref{subsec:multidepot} reviews multi-depot
+routing, the source of the spatial flexibility that this paper turns into a
+compliance instrument. Section~\ref{subsec:stochastic_routing} reviews
+routing under demand uncertainty and identifies what changes when the
+first-stage decision is an accounting entitlement rather than a physical
+commitment. Table~\ref{tab:literature_taxonomy} summarises the positioning.
 
-\subsection{Carbon in vehicle routing and multi-depot flexibility}
+\subsection{Carbon in routing and in operational compliance models}
 \label{subsec:carbon_routing}
 
 Emission-aware routing begins from the observation that fuel burn, and hence
 carbon, is not proportional to distance. The pollution-routing problem of
 \citet{bektas2011pollution} makes fuel consumption an explicit function of
 payload and speed, so that the order in which customers are visited changes
-emissions even when the route length does not; \citet{demir2012alns} develop
-an adaptive large neighbourhood search for the resulting non-linear
-evaluation. We adopt this load-dependent emission model, and the same property
-governs our setting: because payload declines along a route, moving a customer
-between depots changes not only distance but the emission charged to each
-depot's account.
+emissions even when route length does not. \citet{demir2012alns} develop an
+adaptive large neighbourhood search for the resulting non-linear evaluation,
+and the surveys of \citet{demir2014review} and \citet{lin2014survey} document
+how rapidly the resulting family of models has grown. A parallel branch
+constrains the vehicle technology rather than the driving profile:
+\citet{erdogan2012green} route alternative-fuel vehicles subject to driving
+range and refuelling stops. We adopt the load-dependent emission model of
+\citet{bektas2011pollution}, and the property it captures is what gives our
+setting its structure: because payload declines along a route, moving a
+customer between depots changes not only distance but the emission charged to
+each depot's account.
 
-These models price carbon exogenously, through a per-unit cost or a constraint
-on total emissions. A separate literature in operations management represents
-regulatory compliance itself. \citet{benjaafar2013carbon} embed carbon
-constraints and trading into procurement, production, and inventory decisions,
-and show that operational adjustment is often a cheaper compliance channel
-than technological investment. That literature works at the level of the firm:
-the decision variable is an aggregate emission quantity, and the allocation of
-responsibility to individual facilities, together with the routing decisions
-that generate the emissions, remains outside the model. The distinction
-matters here because a single firm-level allowance and a set of per-depot
-budgets induce different problems. Under one shared allowance only the total
-emission is priced, and where it is produced is immaterial. Under delegated
-budgets the location of emission determines which account is in deficit, and
-therefore whether a costly internal transfer or an external purchase is
-triggered.
+What all of these models share is that carbon is priced exogenously, through
+a per-unit cost or a cap on total emissions, and that the price does not
+depend on which part of the organisation produced the emission. A separate
+literature in operations management models regulatory compliance itself.
+\citet{hua2011managing} introduce carbon trading into inventory decisions and
+show how the order quantity responds to the carbon price and the cap;
+\citet{chen2013carbon} characterise the carbon-constrained economic order
+quantity and identify conditions under which emissions can be reduced at
+small cost; \citet{benjaafar2013carbon} embed carbon constraints and trading
+into procurement, production, and inventory models and show that operational
+adjustment is frequently a cheaper compliance channel than technological
+investment; \citet{zakeri2015carbon} compare carbon pricing against a
+trading scheme at the supply-chain level and find that the two policies
+induce materially different operational responses.
 
-Multi-depot routing supplies the flexibility that makes such reallocation
-possible. Customers situated between depots may be served from either, and the
-assignment decision interacts with routing and fleet utilisation
-\citep{cordeau1997vrp,montoyatorres2015literature}. In the classical problem,
-reassignment is motivated by distance or workload balance. In ours it acquires
-a second and quite different motive: reassigning a customer moves emission
-from one carbon account to another, and is therefore a way of relieving a
-budget deficit without buying anything. This gives the multi-depot structure
-an economic role it does not have in the classical formulation, and it is the
-reason the model requires both recourse channels to be represented rather than
-collapsed into one.
+This literature works at the level of the firm. Its decision variable is an
+aggregate emission quantity, the physical decisions that generate the
+emissions are represented in reduced form, and the attribution of
+responsibility to individual facilities does not arise. The distinction
+matters here, because a single firm-level allowance and a vector of
+per-facility budgets induce different optimisation problems. Under one shared
+allowance only total emission is priced, and where it is produced is
+immaterial to the objective. Under delegated budgets the location of emission
+determines which account falls into deficit, and therefore whether a costly
+internal transfer or an external purchase is triggered. It is this
+localisation of carbon responsibility, together with the frictional channel
+that partially undoes it, that the present model adds.
 
-\subsection{Recourse under demand uncertainty}
+\subsection{Multi-depot routing and the value of reassignment}
+\label{subsec:multidepot}
+
+The multi-depot vehicle routing problem couples an assignment decision to a
+routing decision: customers situated between depots may be served from
+either, and the choice interacts with route length, fleet utilisation, and
+workload balance. \citet{renaud1996tabu} and \citet{cordeau1997vrp} establish
+the classical tabu-search treatments and the benchmark instances still in
+use; \citet{vidal2012hybrid} give a hybrid genetic algorithm that unifies the
+multi-depot and periodic variants and remains a state-of-the-art reference;
+\citet{montoyatorres2015literature} survey the field, and
+\citet{uchoa2017benchmark} discuss the design of instance sets that avoid the
+homogeneity of earlier benchmarks, a concern we return to when constructing
+test instances.
+
+In all of this work, reassigning a customer is motivated by distance, load
+balance, or fleet cost. In the problem studied here it acquires a second and
+economically distinct motive: reassignment moves emission from one carbon
+account to another, and is therefore a way of relieving a budget deficit
+without purchasing anything externally. The same spatial flexibility that the
+classical literature exploits for cost reduction becomes, under delegated
+carbon budgets, a compliance instrument. This is why the model must represent
+both the physical channel and the accounting channel explicitly rather than
+collapsing them: they relieve the same imbalance through different
+mechanisms and at different costs, and which one is preferable depends on
+the geometry of the instance and on the friction of the transfer network.
+
+\subsection{Routing under demand uncertainty}
 \label{subsec:stochastic_routing}
 
 When demand is realised after commitment, routing becomes a stochastic
-programme with recourse \citep{gendreau1996stochastic,gendreau2016future}. The
-standard formulations commit to a route plan or a fleet, observe demand, and
-then repair infeasibility, typically through return trips to a depot or
-through route reoptimisation. Solution approaches rely on sample average
-approximation, which replaces the expectation by an empirical average over
-sampled scenarios \citep{kleywegt2002sample}, or on scenario decomposition
-such as progressive hedging, which solves each scenario separately and drives
-the copies of the first-stage decision towards consensus
-\citep{rockafellar1991scenarios}. We use both as benchmarks.
+programme with recourse. \citet{bertsimas1992vehicle} analyses a priori
+routing under stochastic demand; \citet{gendreau1996stochastic} survey the
+early literature; \citet{laporte2002integer} give an integer L-shaped method
+for the capacitated problem with stochastic demands; and
+\citet{oyola2018stochastic} and \citet{gendreau2016future} review models and
+research directions. The standard formulations commit to a route plan or a
+fleet, observe demand, and repair infeasibility, typically through return
+trips to a depot or through route reoptimisation. On the methodological
+side, solution approaches rely on sample average approximation, which
+replaces the expectation by an empirical average over sampled scenarios and
+provides statistical guarantees on the resulting estimate
+\citep{kleywegt2002sample}, or on scenario decomposition such as progressive
+hedging, which solves each scenario separately and drives the copies of the
+first-stage decision towards consensus \citep{rockafellar1991scenarios}. We
+use both as benchmarks, and follow \citet{birge2011introduction} in reporting
+the value of the stochastic solution and the expected value of perfect
+information.
 
-Our first-stage decision differs from the ones these formulations assume. It
+Our first-stage decision differs from the one these formulations assume. It
 is not a physical commitment such as a route or a vehicle, but a vector of
-accounting entitlements, and its second-stage consequences are determined by a
-market and a transfer network rather than by a failure-and-replenishment rule.
-Two implications follow. First, the recourse has a component that is
-independent of routing: for fixed emissions, settling the accounts is a
-minimum-cost flow problem whose value function and duals can be computed
-exactly, which is what allows the budget to be re-optimised exactly rather
-than heuristically once scenario emissions are known. Second, whether the
-first-stage decision is worth optimising under uncertainty at all is an
-empirical question, measured here by the value of the stochastic solution and
-the expected value of perfect information \citep{birge2011introduction}; we
-report both against deterministic and simple managerial allocation rules
-rather than assuming that the stochastic model must dominate.
+accounting entitlements, and its second-stage consequences are determined by
+a market and a transfer network rather than by a failure-and-replenishment
+rule. Two implications follow. First, the recourse contains a component that
+is independent of routing: once emissions are fixed, settling the accounts is
+a minimum-cost flow problem whose value function and duals can be computed
+exactly, which is what permits the budget to be re-optimised exactly rather
+than heuristically. Second, whether the first-stage decision is worth
+optimising under uncertainty at all becomes an empirical question rather than
+an assumption, and we report it against deterministic and simple managerial
+allocation rules rather than presuming that the stochastic model dominates.
 
 On the algorithmic side, adaptive large neighbourhood search is the standard
-substrate for routing problems of this size
-\citep{ropke2006adaptive,demir2012alns}, and we adopt it for the routing
-block. Its operator selection is driven by search history and is therefore
-uninformed about the carbon accounts. The method proposed here supplies that
-information from the dual of the recourse problem: each depot carries a price,
-and candidate moves are screened by the price difference between the depots
-they would connect. The price is exact for the continuous recourse at fixed
-routing, and every shortlisted move is nevertheless accepted only after
-re-evaluation under the complete objective, so the guidance accelerates the
-search without altering what counts as an improvement.
+substrate for routing problems at this scale
+\citep{ropke2006adaptive,pisinger2007general}, including for emission-aware
+variants \citep{demir2012alns}, and we adopt it for the routing block. Its
+operator selection is driven by search history and is therefore uninformed
+about the state of the carbon accounts. Matheuristics that combine such a
+search with an exact mathematical-programming component are by now a
+well-established design \citep{archetti2014survey}, the canonical device
+being set-partitioning reoptimisation over a pool of generated routes
+\citep{subramanian2013hybrid}. The method developed here places its exact
+component differently. Rather than reoptimising routes, it solves the
+first-stage budget problem exactly at fixed scenario emissions, which is
+possible because the recourse value is convex in the budget; and it draws
+guidance for the routing search from the dual of the recourse problem, so
+that each depot carries a price and candidate moves are screened by the price
+difference between the depots they connect. Every shortlisted move is
+nevertheless accepted only after re-evaluation under the complete objective,
+so the guidance accelerates the search without altering what counts as an
+improvement.
 
 \begin{table}[!htbp]
 \centering
 \caption{Positioning with respect to the closest streams of literature.}
 \label{tab:literature_taxonomy}
 \footnotesize
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
 Study & Multi-depot & Demand uncertainty & Carbon treatment & Responsibility unit & Internal transfer \\
 \midrule
-\citet{bektas2011pollution}    & No  & No  & Exogenous cost   & Firm  & --- \\
-\citet{demir2012alns}          & No  & No  & Exogenous cost   & Firm  & --- \\
-\citet{benjaafar2013carbon}    & No  & No  & Cap-and-trade    & Firm  & No  \\
+\citet{bertsimas1992vehicle}   & No  & Yes & None             & ---   & --- \\
+\citet{renaud1996tabu}         & Yes & No  & None             & ---   & --- \\
 \citet{cordeau1997vrp}         & Yes & No  & None             & ---   & --- \\
-\citet{gendreau1996stochastic} & No  & Yes & None             & ---   & --- \\
+\citet{laporte2002integer}     & No  & Yes & None             & ---   & --- \\
+\citet{bektas2011pollution}    & No  & No  & Exogenous cost   & Firm  & --- \\
+\citet{hua2011managing}        & No  & No  & Cap-and-trade    & Firm  & No  \\
+\citet{demir2012alns}          & No  & No  & Exogenous cost   & Firm  & --- \\
+\citet{vidal2012hybrid}        & Yes & No  & None             & ---   & --- \\
+\citet{benjaafar2013carbon}    & No  & No  & Cap-and-trade    & Firm  & No  \\
+\citet{chen2013carbon}         & No  & No  & Cap / tax        & Firm  & No  \\
+\citet{zakeri2015carbon}       & No  & No  & Pricing vs.\ trading & Firm & No \\
 \textbf{This study}            & Yes & Yes & Delegated budget & Depot & Yes \\
 \bottomrule
 \end{tabular}
@@ -336,7 +389,8 @@ Study & Multi-depot & Demand uncertainty & Carbon treatment & Responsibility uni
 {\footnotesize \textit{Notes.} ``Responsibility unit'' is the entity against
 whose carbon account emissions are charged. ``Internal transfer'' indicates
 whether the model permits carbon responsibility to be moved between
-responsibility units at a cost.}
+responsibility units at a cost. A dash denotes that the attribute does not
+apply because the model contains no carbon account.}
 \end{minipage}
 \end{table}
 
