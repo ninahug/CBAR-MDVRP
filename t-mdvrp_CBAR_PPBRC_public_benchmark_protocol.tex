@@ -476,7 +476,7 @@ revisable, the first-stage decision would carry no operational content.
 between depots only along authorised arcs, at a directional friction cost and
 subject to a capacity limit, representing approval, audit and internal-control
 requirements. A frictionless uncapacitated network is retained only as an
-institutional benchmark.
+institutional regime.
 
 \item \textbf{Exogenous carbon prices with a positive spread.} External
 purchase and sale prices are exogenous, constant across scenarios, and satisfy
@@ -917,8 +917,9 @@ side of its budget so that no cross-depot netting opportunity arises.  The
 first-stage decision is therefore economically active only when demand and
 emission responsibilities are heterogeneous across depots and scenarios and
 when internal transfers or external transactions are genuinely frictional.
-These cases are institutional benchmarks rather than the default setting of
-the model.
+These cases are limiting institutional regimes rather than the default
+setting of the model; Corollary~\ref{cor:institutional_nesting} establishes
+that their recourse costs are ordered.
 
 %%=====================================================================
 \section{Structure of the Carbon Recourse}
@@ -1189,7 +1190,7 @@ Corollary~\ref{cor:shortest_path_price} gives both
 $\lambda_{d'}-\lambda_d\le0$ and $\lambda_d-\lambda_{d'}\le0$.
 \end{proof}
 
-\subsection{Subgradients and institutional benchmarks}
+\subsection{Subgradients and institutional regimes}
 \label{subsec:recourse_subgradient}
 
 \begin{proposition}[Optimal depot prices are recourse subgradients]
@@ -1243,7 +1244,7 @@ Define
 \label{eq:single_account_settlement}
 \end{equation}
 The following special cases connect the network-constrained model to its
-institutional benchmarks.
+institutional regimes.
 
 \begin{proposition}[Independent and fully pooled special cases]
 \label{prop:institutional_cases}
@@ -1282,9 +1283,9 @@ Since $\sum_d(E_d-B_d)=\sum_dE_d-B^{\mathrm{corp}}$, the distribution of the
 first-stage budget does not affect pooled recourse.
 \end{proof}
 
-\begin{remark}[Canonical implementation of the fully pooled benchmark]
+\begin{remark}[Canonical implementation of the fully pooled regime]
 \label{rem:canonical_pooling}
-The fully pooled benchmark should be evaluated directly through
+The fully pooled regime should be evaluated directly through
 \eqref{eq:pooled_recourse}, or equivalently by a single corporate market
 account.  Implementing it as a strongly connected zero-cost transfer network
 can create arbitrary zero-cost circulation flows: the recourse value and the
@@ -1295,6 +1296,9 @@ over the primary optimal face, or an acyclic canonical transfer representation
 should be imposed.  Transfer-volume statistics from an arbitrary zero-cost
 optimal flow are not reported.
 \end{remark}
+
+The three regimes described informally in
+Section~\ref{subsec:model_interpretation} can now be ranked.
 
 \begin{corollary}[Institutional nesting]
 \label{cor:institutional_nesting}
@@ -1400,7 +1404,7 @@ the marginal cost of emission at depot $d$ and $\mu_{dd'}^\omega$ the marginal
 value of capacity on transfer arc $(d,d')$. When the optimal flow is not
 unique, minimising total internal transfer over the optimal face selects a
 canonical representative; this leaves $\Psi_{\overline T}(g^\omega)$ unchanged
-and makes reported transfer volumes well defined. The pooled benchmark is
+and makes reported transfer volumes well defined. The fully pooled regime is
 evaluated through Remark~\ref{rem:canonical_pooling}.
 
 Consider a modification $m$ of a routing plan, with cost change
@@ -1499,7 +1503,7 @@ Let $\nu$ be the multiplier of the corporate budget equality, and let $\alpha_d^
 \end{equation}
 Every depot whose budget lies strictly between its bounds therefore carries the same expected marginal carbon value, while a depot at its lower or upper bound satisfies the corresponding one-sided condition.
 
-\subsection{Algorithmic scheme}
+\subsection{The complete algorithm}
 \label{subsec:ppbrc_overall}
 
 An initial routing plan is obtained for each scenario by inserting customers at their cheapest feasible position, opening a vehicle when no such position exists. The initial budget is proportional to expected reference emissions and is projected onto $\mathcal B$. Two variants are distinguished. \emph{PPBRC-core} runs the scheme from a single deterministic construction and confines the neighbourhood search to small removals. \emph{PPBRC} constructs several initial plans and retains the best, and admits occasional large removals during the search. The distinction isolates the contribution of the coordination scheme from that of diversification, and both variants are reported separately in Section~\ref{sec:computational_experiments}.
@@ -1571,7 +1575,7 @@ otherwise.
 \label{fig:ppbrc_flow}
 \end{figure}
 
-\subsection{Convergence analysis}
+\subsection{Convergence and complexity}
 \label{subsec:ppbrc_properties}
 
 \begin{proposition}[Monotone objective sequence]
