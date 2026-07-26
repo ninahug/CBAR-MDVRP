@@ -1,9 +1,11 @@
-% Verified via web search (title/authors/journal/volume/pages cross-checked
-% against publisher/aggregator listings) before being added here. Only
-% entries actually needed by the tex as of this commit are included; see
-% the "still needed" note in the accompanying commit/PR description for the
-% remaining ~11 literature-review citation keys that are used in Section 2
-% but not yet verified or entered here.
+% Every entry below was verified by web search before being added: the
+% authors, title, journal, volume, pages and (where available) DOI were
+% cross-checked against publisher or aggregator listings, not written from
+% memory. Entries are added only when the paper is actually cited.
+
+%%---------------------------------------------------------------------
+%% Multi-depot vehicle routing
+%%---------------------------------------------------------------------
 
 @article{cordeau1997vrp,
   author  = {Cordeau, Jean-Fran{\c{c}}ois and Gendreau, Michel and Laporte, Gilbert},
@@ -16,15 +18,14 @@
   doi     = {10.1002/(SICI)1097-0037(199709)30:2<105::AID-NET5>3.0.CO;2-G}
 }
 
-@article{bektas2011pollution,
-  author  = {Bekta{\c{s}}, Tolga and Laporte, Gilbert},
-  title   = {The Pollution-Routing Problem},
-  journal = {Transportation Research Part B: Methodological},
-  year    = {2011},
-  volume  = {45},
-  number  = {8},
-  pages   = {1232--1250},
-  doi     = {10.1016/j.trb.2011.02.004}
+@article{montoyatorres2015literature,
+  author  = {Montoya-Torres, Jairo R. and L{\'o}pez Franco, Julio and Nieto Isaza, Santiago and Felizzola Jim{\'e}nez, Heriberto and Herazo-Padilla, Nilson},
+  title   = {A Literature Review on the Vehicle Routing Problem with Multiple Depots},
+  journal = {Computers \& Industrial Engineering},
+  year    = {2015},
+  volume  = {79},
+  pages   = {115--129},
+  doi     = {10.1016/j.cie.2014.10.029}
 }
 
 @article{uchoa2017benchmark,
@@ -38,6 +39,47 @@
   doi     = {10.1016/j.ejor.2016.08.012}
 }
 
+%%---------------------------------------------------------------------
+%% Emissions, green routing, and carbon-aware operations
+%%---------------------------------------------------------------------
+
+@article{bektas2011pollution,
+  author  = {Bekta{\c{s}}, Tolga and Laporte, Gilbert},
+  title   = {The Pollution-Routing Problem},
+  journal = {Transportation Research Part B: Methodological},
+  year    = {2011},
+  volume  = {45},
+  number  = {8},
+  pages   = {1232--1250},
+  doi     = {10.1016/j.trb.2011.02.004}
+}
+
+@article{demir2012alns,
+  author  = {Demir, Emrah and Bekta{\c{s}}, Tolga and Laporte, Gilbert},
+  title   = {An Adaptive Large Neighborhood Search Heuristic for the Pollution-Routing Problem},
+  journal = {European Journal of Operational Research},
+  year    = {2012},
+  volume  = {223},
+  number  = {2},
+  pages   = {346--359},
+  doi     = {10.1016/j.ejor.2012.06.044}
+}
+
+@article{benjaafar2013carbon,
+  author  = {Benjaafar, Saif and Li, Yanzhi and Daskin, Mark},
+  title   = {Carbon Footprint and the Management of Supply Chains: Insights from Simple Models},
+  journal = {IEEE Transactions on Automation Science and Engineering},
+  year    = {2013},
+  volume  = {10},
+  number  = {1},
+  pages   = {99--116},
+  doi     = {10.1109/TASE.2012.2203304}
+}
+
+%%---------------------------------------------------------------------
+%% Stochastic programming and stochastic routing
+%%---------------------------------------------------------------------
+
 @article{gendreau1996stochastic,
   author  = {Gendreau, Michel and Laporte, Gilbert and S{\'e}guin, Ren{\'e}},
   title   = {Stochastic Vehicle Routing},
@@ -47,4 +89,62 @@
   number  = {1},
   pages   = {3--12},
   doi     = {10.1016/0377-2217(95)00050-X}
+}
+
+@article{gendreau2016future,
+  author  = {Gendreau, Michel and Jabali, Ola and Rei, Walter},
+  title   = {50th Anniversary Invited Article---Future Research Directions in Stochastic Vehicle Routing},
+  journal = {Transportation Science},
+  year    = {2016},
+  volume  = {50},
+  number  = {4},
+  pages   = {1163--1173},
+  doi     = {10.1287/trsc.2016.0709}
+}
+
+@book{birge2011introduction,
+  author    = {Birge, John R. and Louveaux, Fran{\c{c}}ois},
+  title     = {Introduction to Stochastic Programming},
+  publisher = {Springer},
+  address   = {New York},
+  edition   = {2nd},
+  year      = {2011},
+  doi       = {10.1007/978-1-4614-0237-4}
+}
+
+@article{rockafellar1991scenarios,
+  author  = {Rockafellar, R. Tyrrell and Wets, Roger J.-B.},
+  title   = {Scenarios and Policy Aggregation in Optimization under Uncertainty},
+  journal = {Mathematics of Operations Research},
+  year    = {1991},
+  volume  = {16},
+  number  = {1},
+  pages   = {119--147},
+  doi     = {10.1287/moor.16.1.119}
+}
+
+@article{kleywegt2002sample,
+  author  = {Kleywegt, Anton J. and Shapiro, Alexander and Homem-de-Mello, Tito},
+  title   = {The Sample Average Approximation Method for Stochastic Discrete Optimization},
+  journal = {SIAM Journal on Optimization},
+  year    = {2002},
+  volume  = {12},
+  number  = {2},
+  pages   = {479--502},
+  doi     = {10.1137/S1052623499363220}
+}
+
+%%---------------------------------------------------------------------
+%% Heuristics
+%%---------------------------------------------------------------------
+
+@article{ropke2006adaptive,
+  author  = {Ropke, Stefan and Pisinger, David},
+  title   = {An Adaptive Large Neighborhood Search Heuristic for the Pickup and Delivery Problem with Time Windows},
+  journal = {Transportation Science},
+  year    = {2006},
+  volume  = {40},
+  number  = {4},
+  pages   = {455--472},
+  doi     = {10.1287/trsc.1050.0135}
 }
