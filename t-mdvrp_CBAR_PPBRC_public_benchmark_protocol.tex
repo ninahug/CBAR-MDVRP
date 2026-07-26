@@ -1309,10 +1309,13 @@ Depot--customer and customer--customer distances are precomputed, and route cost
 \section{Computational Experiments}
 \label{sec:computational_experiments}
 
-The experiments address five questions in turn: whether the model, its dual prices, and the algorithm are numerically consistent (Section~\ref{subsec:e1_verification}); whether price-polyhedral information improves search relative to external baselines (Section~\ref{subsec:e2_algorithm}); whether stochastic budget allocation has material value (Section~\ref{subsec:e3_stochastic_value}); how the operational and accounting recourse channels interact across a factorial design (Section~\ref{subsec:e4_recourse_interaction}); and whether the results carry over to public benchmark instances (Section~\ref{subsec:e5_public_benchmark}).  The algorithm architecture, external baselines, instance classes, scenario streams, and search seeds are all fixed before the reported runs.
+This section reports five experiments.  Section~\ref{subsec:e1_verification} verifies the deterministic-equivalent model, its recourse duals, and the accuracy of the proposed algorithm against exact solutions.  Section~\ref{subsec:e2_algorithm} compares the algorithm with external benchmark methods and isolates the contribution of its individual mechanisms.  Section~\ref{subsec:e3_stochastic_value} quantifies the value of the stochastic first-stage allocation.  Section~\ref{subsec:e4_recourse_interaction} examines, through a factorial design, how the operational and accounting recourse channels interact.  Section~\ref{subsec:e5_public_benchmark} evaluates the method on public benchmark instances.  Section~\ref{subsec:claims_evidence} states the scope and the limitations of the resulting evidence.  The algorithm architecture, benchmark methods, instance classes, scenario streams, and search seeds are all fixed before any reported run.
 
-\subsection{Experimental setup}
+\subsection{Experimental design}
 \label{subsec:experimental_setup}
+
+\subsubsection{Test instances}
+\label{subsubsec:test_instances}
 
 Two datasets are used, each playing a role standard in this literature: a numerical-experiment dataset for controlled comparison, and a case-study dataset for external validity.  The numerical-experiment dataset comprises 94 reported instances (30 verification, 24 comparison, 8 stochastic-value, 32 sensitivity; Table~\ref{tab:frozen_data_suites}), together with 8 further instances used only for parameter calibration, all produced by a single instance-generation procedure that follows the classical multi-depot geometry of \citet{cordeau1997vrp}, the controlled clustered-instance methodology of \citet{uchoa2017benchmark}, the correlated-demand-shock decomposition surveyed by \citet{gendreau1996stochastic}, and the load-dependent fuel-consumption model of \citet{bektas2011pollution}.  Depot placement, core/boundary customer sampling, demand-shock generation, reference-emission construction, and transfer-network assembly are identical across every suite; the suites differ only in the scale and factor settings supplied to this procedure -- customer and depot counts, scenario-bank sizes, and, for E2 and E4, the carbon-network stratum or factorial cell -- as detailed in Table~\ref{tab:frozen_data_suites} and Appendix~\ref{app:scenario_generation}.
 
@@ -1337,6 +1340,9 @@ The corporate budget is parameterised as
  \label{eq:budget_stringency}
 \end{equation}
 where $E^0$ is obtained from a deterministic home-depot angle-sweep construction under base demand.  The reference allocation is proportional to depot reference emissions, with lower and upper responsibility bounds equal to $45\%$ and $160\%$ of that allocation.  The internal transfer graph is a bidirectional ring; the five-depot classes include two additional bidirectional chords.  Arc frictions are directionally asymmetric, and capacities are scaled relative to the reference emissions of their incident depots.
+
+\subsubsection{Parameter settings}
+\label{subsubsec:parameter_settings}
 
 Table~\ref{tab:parameter_values} lists the value of every parameter of the instance generator and of the carbon-account layer.  Values are held at these settings throughout, except for the factors that a given experiment deliberately varies: the budget factor $\gamma_B$ and transfer-capacity scale $\tau$ define the three carbon-network strata of the comparison suite, and the four factors of the sensitivity suite take the two levels listed in the final block.
 
@@ -1431,206 +1437,236 @@ Before evaluating solution quality, each instance class is described by deficit-
 \toprule
 Class & Deficit--surplus coexistence (\%) & Mean price dispersion & Transfer-use scenarios (\%) & Saturated arcs (\%) & Purchase scenarios (\%) & Sale scenarios (\%)\\
 \midrule
-\multicolumn{7}{c}{\textit{To be filled from the frozen instances without ex-post filtering}}\\
+\multicolumn{7}{c}{}\\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-All heuristic comparisons use identical hardware, total wall-clock limits, training scenarios, deterministic reference starts, and the five frozen search seeds $\{91001,91002,91003,91004,91005\}$.  External baselines receive the same exact load-dependent route evaluator, carbon-recourse oracle, and shared-budget feasibility recovery as PPBRC.  SAA-ALNS uses a conventional reactive destroy--repair search without price-polyhedral guidance.  PH-ALNS uses scenario budget copies and multiplier-based consensus coordination; because it is a heuristic adaptation for an integer routing problem, both its feasible recovered objective and its budget-consensus residual are reported.  PPBRC-core and complete PPBRC use the same total time limit, with the latter allocating only the unused post-stagnation budget to controlled diversification.  We report best, mean, median, standard deviation, wall-clock time, paired differences, and anytime performance.  Paired Wilcoxon tests are descriptive; raw paired differences and effect sizes remain primary.  Every reported solution is evaluated with the complete objective \eqref{eq:ppbrc_true_scenario} and exact accounting recourse.
+\subsubsection{Algorithms compared}
+\label{subsubsec:algorithms_compared}
 
-\subsection{Verification against exact solutions}
+Six methods are compared.  Two are external benchmarks drawn from established
+approaches to stochastic routing; three are restrictions of the proposed
+method that disable one mechanism each, and serve to attribute performance to
+individual components rather than to the architecture as a whole; the last is
+the complete method.
+
+\begin{enumerate}
+\item \textbf{SAA-ALNS.} A sample-average-approximation benchmark: reactive destroy--repair search with random, worst, and related removals, greedy and regret-2 repair, simulated-annealing acceptance, and periodic exact optimisation of the shared budget.  It carries no price-polyhedral guidance.
+\item \textbf{PH-ALNS.} A progressive-hedging benchmark with scenario-specific budget copies, exact recourse subgradients in projected proximal updates, adaptive penalty balancing, scenario-level ALNS, and exact feasible nonanticipative recovery.  Because progressive hedging is not exact for an integer routing problem, both its recovered feasible objective and its budget-consensus residual are reported.
+\item \textbf{Cost-only coordination.} The proposed block architecture with depot prices and congestion multipliers removed.
+\item \textbf{Price-guided routing only.} The price-polyhedral routing block with the first-stage budget held at its initial value.
+\item \textbf{PPBRC-core.} The monotone single-trajectory price-polyhedral routing and exact budget-coordination engine.
+\item \textbf{PPBRC.} PPBRC-core followed by bounded post-stagnation destroy--repair diversification and a final price-polyhedral refinement.
+\end{enumerate}
+
+Equal-allocation, expected-demand, and reference-emission budget rules are
+additionally used in Section~\ref{subsec:e3_stochastic_value} as managerial
+reference policies for the first-stage decision.
+
+\subsubsection{Performance measures and computational environment}
+\label{subsubsec:performance_measures}
+
+All methods are run under identical hardware, wall-clock limits, training
+scenarios, deterministic reference starts, and the five pre-specified search
+seeds $\{91001,\dots,91005\}$.  The benchmark methods receive the same exact
+load-dependent route evaluator, carbon-recourse oracle, and shared-budget
+feasibility recovery as the proposed method, so that differences in
+performance reflect search and coordination rather than differences in
+evaluation.  PPBRC-core and complete PPBRC receive the same total time limit,
+the latter allocating only the unused post-stagnation time to diversification.
+
+Every reported solution is evaluated with the complete objective
+\eqref{eq:ppbrc_true_scenario} and exact accounting recourse, never with the
+surrogate used inside the search.  We report best, mean, median, and standard
+deviation of the objective, wall-clock time, paired differences between
+methods, and anytime performance.  Paired Wilcoxon signed-rank tests are
+reported as descriptive summaries; raw paired differences and effect sizes are
+treated as the primary evidence, in view of the number of instances per
+suite.
+
+\subsection{Model verification and solution accuracy}
 \label{subsec:e1_verification}
 
-Small deterministic equivalents use $|\mathcal C|\in\{10,20,30\}$, $|\mathcal D|\in\{2,3\}$, and $|\mathcal W|\in\{2,4,6,8,10\}$, giving 30 instances in total. A MILP solver provides a proven optimum or the best valid bound within the stated time limit; cells in which no integer-feasible incumbent is found within that limit are reported as such rather than silently omitted, and the heuristic is then assessed only against the valid bound. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
+Every instance of the verification suite is solved exactly. A MILP solver provides a proven optimum or the best valid bound within the stated time limit; cells in which no integer-feasible incumbent is found within that limit are reported as such rather than silently omitted, and the heuristic is then assessed only against the valid bound. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
 
 The verification script independently checks customer coverage, route continuity, the number of active vehicles, capacity, route duration, payload conservation, depot emissions, account balance, transfer capacity, first-stage non-anticipativity, and the absence of simultaneous buying and selling above tolerance. For every recourse call it also checks primal--dual equality, price bounds, and complementary conditions on unused, interior, and saturated transfer arcs.
 
 \begin{table}[!htbp]
 \centering
-\caption{Exact and numerical verification on small CBAR-MDVRP instances. All entries are populated from solver output.}
+\caption{Exact and numerical verification on the verification suite.}
 \label{tab:e1_verification}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{rrrllrrrrrr}
 \toprule
 $|\mathcal C|$ & $|\mathcal D|$ & $|\mathcal W|$ & MILP status & PPBRC status & Gap (\%) & Exact-form error & Max balance error & Primal--dual error & Feasibility (\%) & Time (s)\\
 \midrule
-\multicolumn{11}{c}{\textit{To be filled from verified computational output}}\\
+\multicolumn{11}{c}{}\\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-Primary metrics are mean and worst optimality gap, the maximum difference between the two independent exact formulations, maximum component-wise objective error, maximum recourse primal--dual error, feasibility rate, and wall-clock time. The implementation target is an exact-form discrepancy, account-balance residual, and recourse primal--dual residual below $10^{-6}$; any run exceeding the declared tolerance is classified as an implementation failure rather than a feasible observation.  E1 also reports the number of active vehicles so that a nominal multi-depot test cannot silently collapse to one route per depot. No zero-gap or exact-recovery claim is made before the results are available.
+Primary metrics are mean and worst optimality gap, the maximum difference between the two independent exact formulations, maximum component-wise objective error, maximum recourse primal--dual error, feasibility rate, and wall-clock time. The implementation target is an exact-form discrepancy, account-balance residual, and recourse primal--dual residual below $10^{-6}$; any run exceeding the declared tolerance is classified as an implementation failure rather than a feasible observation.  The number of active vehicles is also reported, so that a nominal multi-depot test cannot silently collapse to a single route per depot.
 
-\subsection{Comparative algorithm performance}
+\subsection{Comparison with benchmark algorithms}
 \label{subsec:e2_algorithm}
 
+This experiment has two purposes: to establish whether the proposed method is
+competitive with established stochastic-routing approaches, and to attribute
+any advantage to specific mechanisms rather than to the architecture as a
+whole.  The external comparison is complete PPBRC against SAA-ALNS and
+PH-ALNS.  The internal attribution uses the three restricted variants defined
+in Section~\ref{subsubsec:algorithms_compared}: Cost-only coordination removes
+the depot price signal, Price-guided routing only removes budget
+re-optimisation, and PPBRC-core removes the diversification phase.  Comparing
+these against the complete method separates the contribution of price-guided
+routing, of exact budget coordination, and of post-stagnation diversification.
 
-The comparison suite contains 24 instances: $|\mathcal C|\in\{20,50,75,100\}$, $|\mathcal D|\in\{3,5\}$, and three pre-specified carbon-network strata per size class.  Every stochastic instance contains 20 training scenarios.  Each stochastic method is run with the five pre-specified search seeds under identical anytime checkpoints and a common final wall-clock limit.  The primary external comparison is complete PPBRC versus SAA-ALNS and PH-ALNS; PPBRC-core, Cost-only coordination, and Price-guided routing only are retained as internal mechanism controls.
+All six methods are run on every instance of the comparison suite with each of
+the five search seeds, under the common time limit and evaluation protocol of
+Section~\ref{subsubsec:performance_measures}.  Because the three carbon-network
+strata of a given size class share their geometry, demand, and scenario bank,
+differences across strata isolate the effect of budget stringency and transfer
+capacity rather than of instance identity.
 
-This experiment separates external competitiveness from internal mechanism attribution. All methods use the same complete objective and exact carbon-recourse evaluation:
-\begin{enumerate}
-\item \textbf{SAA-ALNS}: a reactive destroy--repair search with random, worst, and related removals, greedy and regret-2 repair, simulated-annealing acceptance, and periodic exact optimisation of the shared budget.
-\item \textbf{PH-ALNS}: a heuristic progressive-hedging adaptation with scenario-specific budget copies, exact recourse subgradients in projected proximal updates, adaptive penalty balancing, scenario ALNS, and exact feasible nonanticipative recovery.
-\item \textbf{Cost-only coordination}: the PPBRC block architecture without depot prices or congestion multipliers.
-\item \textbf{Price-guided routing only}: the price-polyhedral routing block with the initial budget fixed.
-\item \textbf{PPBRC-core}: the monotone single-trajectory price-polyhedral routing and exact budget-coordination engine.
-\item \textbf{PPBRC}: PPBRC-core with bounded post-stagnation destroy--repair diversification followed by final price-polyhedral refinement.
-\end{enumerate}
-Sequential, equal-allocation, and uniform-price policies remain simple managerial benchmarks; compound cross-depot neighbourhoods and restart portfolios are retained only in the appendix because earlier equal-time pilots did not show stable gains.
+Table~\ref{tab:e2_external} reports the external comparison and
+Table~\ref{tab:e2_internal} the mechanism attribution.  Alongside the
+objective, we report the consensus residual of PH-ALNS, since a
+progressive-hedging adaptation for an integer routing problem need not reach
+agreement among its scenario budget copies, and only its exactly recovered
+nonanticipative solution is admissible as feasible.
 
 \begin{table}[!htbp]
 \centering
-\caption{External-baseline pilot over four independent instances and two search seeds per instance. Objectives are feasible values under one shared budget; PH residual is the mean disagreement of scenario budget copies before feasible recovery. These development results are not the final publication experiment.}
-\label{tab:e2_external_pilot}
+\caption{Comparison with external benchmark methods on the comparison suite.}
+\label{tab:e2_external}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{rllrrrr}
+\begin{tabular}{lrrrrrr}
 \toprule
-Limit (s) & Method & Mean objective & Std. & Mean case-best gap (\%) & Mean runtime (s) & PH residual\\
+Method & Best objective & Mean objective & Std. & Mean gap to best (\%) & Consensus residual & Time (s)\\
 \midrule
-1.5 & PH-ALNS & \textbf{102.886} & 10.582 & \textbf{3.849} & 1.517 & 0.261\\
-1.5 & PPBRC-core & 105.642 & 14.299 & 6.493 & 1.502 & 0\\
-1.5 & SAA-ALNS & 111.369 & 15.100 & 12.147 & 1.522 & 0\\
-\midrule
-4.0 & PPBRC-core & \textbf{92.951} & 7.201 & \textbf{0.088} & 2.075 & 0\\
-4.0 & PH-ALNS & 97.838 & 10.272 & 5.204 & 4.018 & 0.331\\
-4.0 & SAA-ALNS & 98.440 & 9.877 & 5.898 & 4.023 & 0\\
+SAA-ALNS & & & & & & \\
+PH-ALNS  & & & & & & \\
+PPBRC    & & & & & & \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-At 1.5 seconds, PH-ALNS has the lowest mean recovered objective, but its scenario budget copies remain materially non-consensual; only the exactly recovered shared-budget solution is treated as feasible. PPBRC-core beats SAA-ALNS in six of eight paired runs, although the pilot sample is too small for a conclusive test. At four seconds, PPBRC-core beats SAA-ALNS in all eight runs, with a mean reduction of 5.35\% ($p=0.007812$), and beats PH-ALNS in seven of eight runs, with a mean reduction of 4.74\% ($p=0.015625$). The core terminates after approximately 2.1 seconds on average, whereas the external baselines consume almost the full four-second allowance.
-
-A longer eight-second diagnostic nevertheless shows that SAA-ALNS can eventually overtake the monotone core on three of four instances because the latter stops at a blockwise local optimum and leaves the remaining time unused. This motivates the controlled diversification phase in the complete implementation.
-
 \begin{table}[!htbp]
 \centering
-\caption{Controlled-diversification pilot at a four-second total limit over four instances and two search seeds.}
-\label{tab:e2_diversification_pilot}
-\begin{tabular}{lrrrr}
+\caption{Contribution of individual mechanisms on the comparison suite.}
+\label{tab:e2_internal}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrrr}
 \toprule
-Method & Mean objective & Std. & Mean case-best gap (\%) & Mean runtime (s)\\
+Variant & Mean objective & Difference vs.\ PPBRC (\%) & Wins/ties/losses & Oracle calls & Time (s)\\
 \midrule
-PPBRC & \textbf{90.811} & 7.421 & \textbf{0.260} & 3.975\\
-PPBRC-core & 92.951 & 7.201 & 2.681 & 2.024\\
-SAA-ALNS & 97.850 & 9.375 & 8.036 & 4.024\\
+Cost-only coordination     & & & & & \\
+Price-guided routing only  & & & & & \\
+PPBRC-core                 & & & & & \\
+PPBRC                      & & & & & \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-Complete PPBRC improves on SAA-ALNS by 6.98\% on average, with seven wins and one loss ($p=0.015625$). Relative to PPBRC-core, the controlled phase reduces the mean objective by 2.29\%, with six wins, one tie, and one loss ($p=0.078125$). An eight-second, one-seed diagnostic gives mean objectives of 88.517 for PPBRC, 90.830 for SAA-ALNS, and 92.951 for PPBRC-core; PPBRC wins three of four cases against SAA-ALNS. These results justify controlled diversification as a practical post-stagnation mechanism, but the final paper will rely on a larger frozen instance set, multiple seeds, and longer time limits.
-
-The external-baseline comparison changes the interpretation of the algorithmic contribution. Generic ALNS supplies strong early and long-horizon diversification; the price-polyhedral core supplies efficient marginal screening and exact budget feedback. The complete method combines these roles without treating destroy--repair mechanics as the theoretical novelty. The final experiment reports anytime curves, oracle calls, budget updates, PH consensus residuals, and paired solution-quality statistics in addition to final objective values.
-
-\subsection{Value of the stochastic carbon-budget allocation}
+\subsection{Value of the stochastic solution}
 \label{subsec:e3_stochastic_value}
 
+This experiment quantifies how much is gained by treating the first-stage
+budget allocation as a stochastic decision rather than a deterministic one.
+For each instance of the stochastic-value suite, the stochastic solution is
+estimated from nested training samples of 20, 50, and 100 scenarios; because
+the samples are nested prefixes of one bank, any change in performance is
+attributable to sample size and not to a different random draw.  The training
+sample size and the stopping settings are selected on the 200 independent
+validation scenarios, and the selected policy is then evaluated once on the
+800 sealed test scenarios.  The 200-scenario heavy-tailed regime-switching
+bank is used only for the distribution-shift check reported in the appendix.
 
-This experiment uses eight geometries with $|\mathcal C|\in\{20,50,75,100\}$ and $|\mathcal D|\in\{3,5\}$.  For each geometry, the stochastic solution is estimated from nested training samples of 20, 50, and 100 scenarios.  Training-sample selection is based on 200 independent validation scenarios.  The selected policy is then evaluated once on 800 sealed same-distribution scenarios.  A separate 200-scenario heavy-tailed regime-switching bank assesses distribution-shift sensitivity in the appendix.  VSS and EVPI are reported in sample, whereas implementable policy comparisons are based on the independent validation and test banks.
-
-We compare six first-stage policies: equal allocation, expected-demand allocation,
-reference-emission allocation, the expected-value deterministic solution, the
-stochastic CBAR solution, and a wait-and-see solution that may choose $B$ after
-observing each scenario. Let $Z_{\mathrm{EV}}$ be the expected cost obtained by
-implementing the expected-value budget and reoptimising second-stage decisions,
-$Z_{\mathrm{SP}}$ the stochastic-programme value, and $Z_{\mathrm{WS}}$ the
-wait-and-see value. For this minimisation problem,
+Six first-stage policies are compared: equal allocation, expected-demand
+allocation, reference-emission allocation, the expected-value deterministic
+solution, the stochastic solution, and a wait-and-see solution that may choose
+$B$ after observing each scenario.  Let $Z_{\mathrm{EV}}$ denote the expected
+cost of implementing the expected-value budget and reoptimising the second
+stage, $Z_{\mathrm{SP}}$ the stochastic-programme value, and
+$Z_{\mathrm{WS}}$ the wait-and-see value.  For this minimisation problem,
 \begin{equation}
  \mathrm{VSS}=Z_{\mathrm{EV}}-Z_{\mathrm{SP}}\ge0,
  \qquad
  \mathrm{EVPI}=Z_{\mathrm{SP}}-Z_{\mathrm{WS}}\ge0.
  \label{eq:vss_evpi}
 \end{equation}
+The wait-and-see policy is an information bound, not an implementable policy;
+it is reported to bound how much of the remaining cost is attributable to
+demand uncertainty itself rather than to the allocation rule.
 
-A first four-case implementation pilot used four training scenarios and six
-independent test scenarios per case. Table~\ref{tab:e3_stochastic} reports the
-cross-case means. The stochastic solution has a large in-sample advantage but
-does not dominate simple reference policies out of sample. This discrepancy is
-treated as evidence of small-sample overfitting rather than as a favourable
-result to be hidden.
+Two distinctions matter for interpretation.  First, VSS and EVPI are
+in-sample quantities computed on the training bank, whereas the comparison of
+implementable policies is made on the sealed test bank; an in-sample advantage
+that does not survive on the test bank indicates overfitting to the scenario
+sample rather than genuine value, and is reported as such.  Second, the
+budget vectors and expected depot prices are reported alongside the cost
+figures, since two allocations with similar cost may distribute carbon
+responsibility very differently.
 
 \begin{table}[!htbp]
 \centering
-\caption{Stochastic budget allocation and independent test performance (pilot).}
+\caption{First-stage allocation policies: in-sample and sealed-test performance.}
 \label{tab:e3_stochastic}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrrrrr}
+\begin{tabular}{lrrrrrrr}
 \toprule
-Policy & Train cost & Test cost & Test Std. & Buy cost & Sale revenue & Transfer & Bound hits & Price dispersion\\
+Policy & Train cost & Test cost & Test Std. & External purchase & External sale & Internal transfer & Price dispersion\\
 \midrule
-Equal allocation & 104.822 & 105.574 & 30.075 & 30.956 & 3.836 & 2.786 & 0.50 & 1.710\\
-Expected-demand allocation & 103.934 & 107.239 & 30.635 & 32.638 & 4.243 & 3.168 & 0.25 & 1.951\\
-Reference-emission allocation & 101.178 & 110.138 & 33.132 & 35.512 & 4.725 & 3.194 & 0.00 & 1.610\\
-Expected-value solution & 106.119 & 118.937 & 33.790 & 46.005 & 7.113 & 3.575 & 0.25 & 2.365\\
-Stochastic CBAR solution & \textbf{83.546} & 111.205 & 33.152 & 37.170 & 5.073 & 3.083 & 0.25 & 1.813\\
-Wait-and-see & 75.222 & \textbf{89.904} & \textbf{21.905} & \textbf{17.753} & 3.983 & \textbf{0.996} & 0.96 & \textbf{0.620}\\
+Equal allocation              & & & & & & & \\
+Expected-demand allocation    & & & & & & & \\
+Reference-emission allocation & & & & & & & \\
+Expected-value solution       & & & & & & & \\
+Stochastic solution           & & & & & & & \\
+Wait-and-see (bound)          & & & & & & & \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
-On the training samples, all four cases satisfy the expected ordering
-$Z_{\mathrm{WS}}\le Z_{\mathrm{SP}}\le Z_{\mathrm{EV}}$. The mean values are
-\[
- \mathrm{VSS}=22.573\;(27.31\%\text{ of }Z_{\mathrm{SP}}),
- \qquad
- \mathrm{EVPI}=8.324\;(10.01\%\text{ of }Z_{\mathrm{SP}}).
-\]
-These sample-based quantities demonstrate that the first-stage decision can be
-active, but they overstate the implementable value when the scenario sample is
-small. In the independent test set, the stochastic policy is 5.33\% more costly
-than equal allocation and 0.97\% more costly than reference-emission allocation
-in this pilot.
-
-We therefore conducted a separate scenario-sample-size diagnostic on three
-independent geometries. The test set was held fixed while the training sample
-increased from four to twelve scenarios. Table~\ref{tab:e3_sample_size} shows
-that the stochastic policy gradually overtakes the reference-emission policy,
-but the test improvement remains modest.
-
 \begin{table}[!htbp]
 \centering
-\caption{Effect of the number of training scenarios on independent test cost (pilot).}
+\caption{Effect of the training sample size on sealed-test cost.}
 \label{tab:e3_sample_size}
 \begin{tabular}{crrrr}
 \toprule
-Training scenarios & Policy & Mean test cost & Improvement vs. reference (\%) & External buy cost\\
+Training scenarios & Policy & Mean test cost & Difference vs.\ reference-emission (\%) & External purchase\\
 \midrule
-\multirow{3}{*}{4}
- & Reference-emission & 114.059 & 0.000 & 33.627\\
- & Expected-value & 118.286 & -3.459 & 38.298\\
- & Stochastic CBAR & 114.198 & 0.036 & 34.188\\
+\multirow{3}{*}{20} & Reference-emission & & & \\
+                    & Expected-value     & & & \\
+                    & Stochastic         & & & \\
 \midrule
-\multirow{3}{*}{8}
- & Reference-emission & 106.535 & 0.000 & 26.356\\
- & Expected-value & 108.131 & -1.337 & 27.990\\
- & Stochastic CBAR & 106.395 & 0.183 & 26.272\\
+\multirow{3}{*}{50} & Reference-emission & & & \\
+                    & Expected-value     & & & \\
+                    & Stochastic         & & & \\
 \midrule
-\multirow{3}{*}{12}
- & Reference-emission & 103.170 & 0.000 & 23.207\\
- & Expected-value & 105.063 & -1.700 & 25.011\\
- & Stochastic CBAR & \textbf{102.933} & \textbf{0.319} & \textbf{23.126}\\
+\multirow{3}{*}{100} & Reference-emission & & & \\
+                     & Expected-value     & & & \\
+                     & Stochastic         & & & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The pilot therefore supports two more cautious conclusions. First, optimising
-against demand uncertainty can improve depot-budget allocation, but its
-out-of-sample value is materially smaller than the in-sample VSS. Second, the
-final experiment must use a substantially larger training sample, report an
-independent test set, and include a scenario-sample-size stability check.
-Budget vectors and expected depot prices will be reported alongside VSS and
-EVPI. The wait-and-see policy remains an information benchmark rather than an
-implementable policy.
-
-\subsection{Sensitivity analysis of operational and accounting recourse}
+\subsection{Sensitivity analysis}
 \label{subsec:e4_recourse_interaction}
 
-A $2\times2$ design switches operational recourse and internal-accounting
-recourse on or off. Operational recourse is disabled by fixing each customer
+The model provides two distinct recourse channels: operational recourse, which
+reassigns boundary customers and reconstructs routes, and accounting recourse,
+which moves carbon credit through the internal transfer network.  This
+experiment measures the value of each channel, and of their joint use, and
+establishes how that value depends on the operating environment.
+
+Each instance is solved under four regimes obtained by enabling or disabling
+the two channels.  Operational recourse is disabled by fixing every customer
 to its home depot; accounting recourse is disabled by setting all internal
-transfer capacities to zero. External trading remains available in all cases
-to preserve complete recourse. Let $Z_{ab}$ denote the expected cost, where
-$a$ indicates operational recourse and $b$ indicates internal accounting
-recourse. Define
+transfer capacities to zero.  External trading remains available throughout,
+so that complete recourse is preserved and the four regimes remain comparable.
+Let $Z_{ab}$ denote the expected cost, where $a$ and $b$ indicate whether
+operational and accounting recourse are available.  Define
 \begin{equation}
  V_{\mathrm{op}}=Z_{00}-Z_{10},\qquad
  V_{\mathrm{acc}}=Z_{00}-Z_{01},\qquad
@@ -1642,60 +1678,58 @@ with interaction
  I=V_{\mathrm{joint}}-V_{\mathrm{op}}-V_{\mathrm{acc}}.
  \label{eq:interaction_index}
 \end{equation}
-Positive $I$ indicates complementarity relative to additivity, whereas negative
-$I$ indicates substitution.
+A positive $I$ indicates that the two channels are complementary relative to
+additivity; a negative $I$ indicates that they substitute for one another.
 
-The six-case structural pilot varies demand variability, demand correlation,
-boundary-customer availability, transfer friction, transfer capacity, and
-budget stringency. The average regime outcomes are reported in
-Table~\ref{tab:e4_interaction}.
+The sensitivity suite varies four factors at two levels each in a replicated
+$2^4$ design: the demand coefficient of variation, the cross-depot demand
+correlation, the share of boundary customers, and the transfer-capacity scale
+(Table~\ref{tab:parameter_values}).  Instance size is held fixed, so estimated
+effects are attributable to these four factors rather than to incidental
+differences in geometry.  Because the design is balanced and replicated, main
+effects and two-factor interactions on $I$ are estimable without confounding,
+which a fractional or unreplicated design would not permit.
+
+The fully pooled regime is additionally reported as an institutional
+benchmark.  Its recourse cost is computed directly from
+\eqref{eq:pooled_recourse} rather than by assigning zero cost to a complete
+transfer network, so that it yields aggregate external trading and a common
+price without implying an arbitrary depot-to-depot transfer volume; see
+Remark~\ref{rem:canonical_pooling}.
 
 \begin{table}[!htbp]
 \centering
-\caption{Operational--accounting recourse regimes (pilot).}
+\caption{Expected cost and mechanism use under the four recourse regimes.}
 \label{tab:e4_interaction}
 \begin{tabular}{ccrrrrr}
 \toprule
-Operational & Accounting & Mean cost & Cross-depot (\%) & Internal transfer & External buy & Price dispersion\\
+Operational & Accounting & Mean cost & Cross-depot service (\%) & Internal transfer & External purchase & Price dispersion\\
 \midrule
-No & No & 84.603 & 0.000 & 0.000 & 1.394 & 2.483\\
-Yes & No & 76.061 & 4.444 & 0.000 & 0.937 & 2.842\\
-No & Yes & 77.712 & 0.000 & 0.227 & 0.645 & 2.122\\
-Yes & Yes & \textbf{69.617} & 7.361 & 0.746 & \textbf{0.430} & \textbf{1.497}\\
+No  & No  & & & & & \\
+Yes & No  & & & & & \\
+No  & Yes & & & & & \\
+Yes & Yes & & & & & \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Across the six cases, operational recourse reduces expected cost by 8.541 on
-average, accounting recourse by 6.891, and their joint use by 14.985. The
-average interaction is close to zero,
-\[
- I=-0.447\quad(-0.22\%\text{ of }Z_{00}),
-\]
-but the case-level signs are heterogeneous: three cases show complementarity
-and three show substitution. Hence neither mechanism universally dominates or
-universally complements the other. In the pilot, cases with more boundary
-customers and higher demand variability are more often associated with
-positive interaction, whereas highly restrictive or readily substitutable
-settings can produce negative interaction. Because the factors are confounded
-in this small fractional design, these associations are treated as hypotheses
-for the frozen factorial experiment, not as causal conclusions.
+\begin{table}[!htbp]
+\centering
+\caption{Estimated factor effects on the recourse interaction index $I$.}
+\label{tab:e4_effects}
+\begin{tabular}{lrrr}
+\toprule
+Factor & Effect on $I$ & Std. error & Effect on $V_{\mathrm{joint}}$\\
+\midrule
+Demand coefficient of variation & & & \\
+Cross-depot correlation         & & & \\
+Boundary-customer share         & & & \\
+Transfer-capacity scale         & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-The joint regime also lowers mean external purchases from 1.394 to 0.430 and
-reduces price dispersion from 2.483 to 1.497. These outcomes are consistent
-with the interpretation that physical reassignment and allowance transfer
-jointly absorb depot-level carbon imbalances. All sensitivity runs are monotone; the
-maximum account residual is $1.78\times10^{-15}$ and the maximum recourse
-primal--dual discrepancy is $1.51\times10^{-14}$.
-
-When the fully pooled regime is included as an institutional benchmark, its
-recourse cost is computed from \eqref{eq:pooled_recourse} rather than from a
-zero-cost complete transfer network. The pooled benchmark therefore reports
-aggregate external trading and the common price, but not an arbitrary
-depot-to-depot transfer volume; see Remark~\ref{rem:canonical_pooling}.
-
-
-\subsection{External validation on public benchmark instances}
+\subsection{Results on public benchmark instances}
 \label{subsec:e5_public_benchmark}
 
 The synthetic suites are necessary for controlled activation of demand risk,
@@ -1719,16 +1753,16 @@ evidence for the stochastic carbon-budget mechanism.
 
 \begin{table}[!htbp]
 \centering
-\caption{Routing regression on the public MDVRP benchmark (E5a), over all 33 Cordeau instances.}
+\caption{Routing performance on the public MDVRP benchmark (E5a), over all 33 Cordeau instances.}
 \label{tab:e5a_public_routing}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
 Instance class & Instances & Customers & Depots & Best gap to BKS (\%) & Mean gap (\%) & Feasible runs (\%)\\
 \midrule
-Small  &  & 50--80   & 2--5 & \multicolumn{3}{c}{\textit{To be filled from frozen runs}}\\
-Medium &  & 100      & 2--4 & \multicolumn{3}{c}{\textit{To be filled from frozen runs}}\\
-Large  &  & 160--360 & 4--9 & \multicolumn{3}{c}{\textit{To be filled from frozen runs}}\\
+Small  &  & 50--80   & 2--5 & & & \\
+Medium &  & 100      & 2--4 & & & \\
+Large  &  & 160--360 & 4--9 & & & \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -1797,10 +1831,10 @@ uncertainty, emissions, and accounting recourse change the problem.
 \toprule
 Method & Train objective & Test objective & Test SE & Relative test cost (\%) & External buy & Internal transfer & Cross-depot (\%) & Time (s)\\
 \midrule
-SAA-ALNS   & \multicolumn{8}{c}{\textit{To be filled from the sealed public-backbone experiment}}\\
-PH-ALNS    & \multicolumn{8}{c}{\textit{To be filled from the sealed public-backbone experiment}}\\
-PPBRC-core & \multicolumn{8}{c}{\textit{To be filled from the sealed public-backbone experiment}}\\
-PPBRC      & \multicolumn{8}{c}{\textit{To be filled from the sealed public-backbone experiment}}\\
+SAA-ALNS   & & & & & & & & \\
+PH-ALNS    & & & & & & & & \\
+PPBRC-core & & & & & & & & \\
+PPBRC      & & & & & & & & \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -1812,7 +1846,7 @@ problem on externally supplied spatial and capacity structures. A favourable
 E5a result cannot validate the carbon model, and an E5b objective cannot be
 compared numerically with the original MDVRP BKS.
 
-\subsection{Claims-to-evidence discipline}
+\subsection{Scope and limitations of the experimental evidence}
 \label{subsec:claims_evidence}
 
 Each experiment supports a specific and bounded claim.  The verification experiment establishes numerical consistency and small-instance solution quality, but cannot establish scalability.  The comparison experiment identifies the contribution of price-polyhedral coordination on the tested instances, but cannot prove dominance on all instances.  The stochastic-value experiment quantifies the value of stochastic optimisation under the chosen scenario model, and does not establish robustness to misspecified distributions.  The sensitivity experiment identifies empirical complementarity or substitution between the two recourse channels, and does not prove a universal sign for $I$.  Within the public-benchmark experiment, E5a establishes routing compatibility with a recognised MDVRP benchmark but does not validate the carbon-account extension, and E5b provides external spatial and capacity structure for the augmented model but does not inherit the original MDVRP best-known solutions, because its objective and information structure differ.
