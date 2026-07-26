@@ -1857,14 +1857,16 @@ seeds $\{91001,\dots,91005\}$.  The benchmark methods receive the same exact
 load-dependent route evaluator, carbon-recourse oracle, and shared-budget
 feasibility recovery as the proposed method, so that differences in
 performance reflect search and coordination rather than differences in
-evaluation.  PPBRC-core and complete PPBRC receive the same total time limit,
-the latter allocating only the unused post-stagnation time to diversification.
+evaluation.  PPBRC-core and complete PPBRC receive the same total time limit, so that the
+comparison between them isolates the effect of diversification at equal
+computational effort.
 
 Every reported solution is evaluated with the complete objective
 \eqref{eq:ppbrc_true_scenario} and exact accounting recourse, never with the
-surrogate used inside the search.  We report best, mean, median, and standard
-deviation of the objective, wall-clock time, paired differences between
-methods, and anytime performance.
+surrogate used inside the search.  For each method we report the best and mean
+objective over the search seeds, its standard deviation, the wall-clock time,
+and the paired difference against each competing method on the same instance
+and seed.
 
 Statistical statements follow three rules.  Paired differences between methods
 on identical instances and seeds are the primary evidence, and are reported
@@ -1965,7 +1967,7 @@ PPBRC    & & & & & & \\
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrr}
 \toprule
-Variant & Mean objective & Difference vs.\ PPBRC (\%) & Wins/ties/losses & Oracle calls & Time (s)\\
+Variant & Mean objective & Std. & Difference vs.\ PPBRC (\%) & Wins/ties/losses & Time (s)\\
 \midrule
 Cost-only coordination     & & & & & \\
 Price-guided routing only  & & & & & \\
@@ -2269,55 +2271,71 @@ Each experiment supports a specific and bounded claim.  The verification experim
 \section{Conclusion}
 \label{sec:conclusion}
 
-This study develops the CBAR-MDVRP, a two-stage stochastic routing model in
-which headquarters delegates depot-level carbon budgets before demand is
-observed and coordinates operational and accounting recourse after demand is
-realised.  The formulation distinguishes physical recourse through
-customer--depot reassignment and route reconstruction from accounting recourse
-through a capacity-constrained internal carbon-credit network and residual
-external trading.  This distinction makes the first-stage allocation
-economically meaningful whenever depot responsibilities and demand risks are
-heterogeneous and carbon transfers are not frictionless.
+This study introduces the CBAR-MDVRP, a two-stage stochastic routing model in
+which headquarters delegates carbon budgets to depots before demand is
+observed and coordinates two forms of recourse once it is realised. The
+formulation separates physical recourse, through customer--depot reassignment
+and route reconstruction, from accounting recourse, through a
+capacity-constrained internal carbon-credit network and residual external
+trading. The separation is what makes the first-stage allocation
+economically meaningful: were credits transferable without friction after
+demand is known, the allocation would be an accounting convention with no
+operational content.
 
-For fixed route emissions, the carbon-account component is a capacitated
-minimum-cost transshipment problem.  Its dual defines an extended price
+For fixed route emissions the carbon-account component is a capacitated
+minimum-cost transshipment problem. Its dual defines an extended price
 polyhedron whose depot prices measure marginal recourse costs and whose
-capacity multipliers identify congested internal-transfer channels.  These
-quantities provide exact local information for the continuous recourse
-function: bounds on the prices, complementarity conditions distinguishing
-unused, interior and saturated transfer channels, and a subgradient
-inequality that bounds the effect of a routing change from below.  They do
-not make the integer routing value function convex.
-
-PPBRC uses this structure in two coordinated blocks.  At a fixed shared
-budget, each scenario is routed against a price-linearised objective whose
-per-depot emission charge is the recourse dual, and the price is refitted
-from the exact dual between rounds.  At fixed scenario emissions, a central
-linear programme optimises the non-anticipative budget and all
-accounting-recourse decisions exactly.  The asymmetry is deliberate: the
-budget subproblem is exact because the recourse value is convex in the budget,
-whereas the routing subproblem is heuristic because the underlying routing problem
-is $\mathcal{NP}$-hard.  The guarantee the method carries is therefore
+capacity multipliers identify congested transfer channels. This yields exact
+local information about the continuous recourse -- bounds on the prices,
+complementarity conditions distinguishing unused, interior and saturated
+channels, and a subgradient inequality bounding the effect of a routing
+change from below -- without convexifying the integer routing problem. The
+solution method exploits the resulting asymmetry: the budget subproblem is
+solved exactly, because the recourse value is convex in the budget at fixed
+emissions, whereas the routing subproblem is addressed heuristically because
+it is $\mathcal{NP}$-hard. The guarantee the method carries is accordingly
 confined to the budget step, which returns a globally optimal allocation for
-the emissions it is given; solution quality in the routing component is
-established computationally rather than by proof.
+the emissions it is given.
 
-The computational design separates four questions: exact model and dual
-verification, the incremental value of price-polyhedral guidance and compound
-neighbourhoods, the value of stochastic budget allocation, and the interaction
-between operational and accounting recourse.  Mechanism-activation diagnostics
-are reported before performance comparisons so that weak or degenerate
-parameter regimes remain visible rather than being removed after observing the
-results.  The fully pooled benchmark is implemented through its aggregate
-settlement representation to avoid economically meaningless zero-cost
-circulation flows.
+Three implications for practice follow from the structure rather than from
+any particular instance. First, the depot price $\lambda_d$ is an
+interpretable internal carbon price: it measures what one further unit of
+emission at that depot costs the firm, and it is confined to the band set by
+the external purchase and sale prices, so it can be used as a transfer price
+without reference to any accounting convention. Second, the divergence
+between depot prices is bounded by the friction of the cheapest internal
+transfer path between them, and a congested channel carries a strictly
+positive multiplier. A firm that wishes its depots to face comparable carbon
+incentives must therefore act on the transfer network itself, and the
+multipliers indicate which channels to relieve. Third, the ordering of the
+pooled, networked and independent regimes prices the internal controls that
+restrict transfers: the difference between the networked and pooled values is
+the operating cost of those controls, which converts a governance question
+into a quantity the firm can measure. The same analysis identifies when
+delegation does not matter -- if depots are homogeneous, or if credits can be
+moved without friction, the allocation is cosmetic -- which is as useful to a
+practitioner as the positive result.
 
-The framework remains limited to a single planning period, a finite demand
-scenario set, centralised decision making, and exogenous external carbon
-prices.  Multi-period banking and borrowing, endogenous internal incentives,
+The computational study is organised so that each claim rests on evidence of
+the appropriate kind. Solution accuracy is assessed against exact optima
+where instances admit them and against sample-average and progressive-hedging
+benchmarks otherwise; the value of modelling the allocation stochastically is
+measured out of sample rather than in sample, so that an in-sample advantage
+which does not survive on held-out scenarios is reported as overfitting
+rather than as value; and the interaction between the two recourse channels
+is estimated on a balanced factorial design in which instance size is held
+fixed. Mechanism-activation diagnostics are reported before any performance
+comparison, so that degenerate parameter regimes remain visible instead of
+being removed once results are known.
+
+The framework is limited to a single planning period, a finite scenario set,
+centralised decision making, and exogenous carbon prices. Multi-period
+banking and borrowing, endogenous incentives for depot managers,
 distributionally robust demand models, and decentralised depot behaviour are
-natural extensions, but each would alter the coordination problem rather than
-serve as a minor add-on to the present model.
+natural extensions. None is a minor addition: each changes the coordination
+problem itself, since banking couples periods, incentives make the depot
+response endogenous, and decentralisation removes the single decision maker
+on which the present formulation rests.
 %%=====================================================================
 \appendix
 
@@ -2334,7 +2352,7 @@ then projected onto the bounded simplex defined by \eqref{eq:budget_total}--\eqr
 \subsection{Neighbourhood evaluation}
 A candidate is evaluated by recomputing the affected routes, so that the change in payload-distance emissions is accounted for exactly rather than approximated by a distance increment. Every candidate is checked against depot eligibility, vehicle capacity, route duration, and fleet availability. Within an outer iteration the price vector is fixed, so a candidate is scored by the price-linearised objective of Section~\ref{subsec:price_neighbourhoods} and no recourse problem is solved inside the neighbourhood loop; the exact recourse oracle is called once per price refit and once per outer iteration to evaluate the complete objective.
 
-\subsection{Canonical recourse flows and pooled benchmarking}
+\subsection{Canonical recourse flows and the pooled regime}
 The primary recourse solve minimises economic cost.  If its optimal flow is non-unique, a secondary solve fixes the primary optimum within tolerance and minimises total internal transfer.  This lexicographic rule removes gratuitous cycles and makes transfer-use statistics reproducible.  The fully pooled institutional benchmark is evaluated directly by \eqref{eq:pooled_recourse}; no depot-to-depot flow statistic is inferred from a zero-cost complete transfer graph.
 
 \subsection{Stopping and reproducibility}
