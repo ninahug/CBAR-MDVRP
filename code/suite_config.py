@@ -31,9 +31,12 @@ DEFAULT_BOUNDARY_SHARE = 0.20     # ASSUMPTION baseline boundary-customer share
 DEFAULT_BUDGET_FACTOR = 1.00
 DEFAULT_CAPACITY_SCALE = 1.00
 
-# Shared round size grid used by the tuning, comparison, and stochastic-value
-# suites, so instance scale is directly comparable across them.
-SIZE_GRID = [20, 40, 60, 80, 100]
+# Shared size grid used by the tuning, comparison, and stochastic-value
+# suites, so instance scale is directly comparable across them. The
+# 50/75/100 sizes are the conventional medium-instance grid in this
+# literature (and the sizes this paper's comparison suite originally used);
+# 20 is added as a small case that the exact solver can still reach.
+SIZE_GRID = [20, 50, 75, 100]
 DEPOT_GRID = [3, 5]
 
 # Verification suite: small enough for the exact MILP to be meaningful.

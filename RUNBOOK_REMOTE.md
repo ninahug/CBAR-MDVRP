@@ -31,8 +31,8 @@ If you copy `data/raw/` from this machine instead, regenerate with:
 python gpt_test/build_cordeau_cbar_benchmark.py --instances data/raw/C-mdvrp --solutions data/raw/C-mdvrp-sol --out data/generated/public_v1
 ```
 
-**3b. The 112 synthetic instances** (10 tuning, 30 verification, 30
-comparison, 10 stochastic-value, 32 sensitivity) — always generated, never
+**3b. The 102 synthetic instances** (8 tuning, 30 verification, 24
+comparison, 8 stochastic-value, 32 sensitivity) — always generated, never
 downloaded:
 ```bash
 cd code
@@ -53,8 +53,8 @@ Work to be done, per stage:
 | stage | runs |
 |---|---|
 | verification (`run_stage1_e1.py`) | 30 instances |
-| comparison (`run_stage2_e2.py`) | 30 instances x 2 seeds x 6 methods = 360 |
-| stochastic value (`run_stage3_e3.py`) | 10 instances |
+| comparison (`run_stage2_e2.py`) | 24 instances x 2 seeds x 6 methods = 288 |
+| stochastic value (`run_stage3_e3.py`) | 8 instances |
 | sensitivity (`run_stage4_e4.py`) | 32 instances x 2 methods = 64 |
 | public benchmark E5a (`run_stage5_e5a.py`) | 33 instances |
 | public benchmark E5b (`run_stage5_e5b.py`) | 11 instances x 2 seeds x 4 methods = 88 |
@@ -76,10 +76,10 @@ cd code
 # "proven optimal" -- see exact_model.py's integer_feasible check).
 python run_stage1_e1.py
 
-# Comparison (360 runs). Shard across N processes, one per core, e.g. N=8:
+# Comparison (288 runs). Shard across N processes, one per core, e.g. N=8:
 python run_stage2_e2.py --num-shards 8 --shard 0   # ... --shard 1 ... up to N-1
 
-# Stochastic value (10 instances; already tuned to a tractable
+# Stochastic value (8 instances; already tuned to a tractable
 # eval-subsample=10 / reduced-iteration setting after the first attempt
 # implied 10+ hours):
 python run_stage3_e3.py
@@ -98,8 +98,8 @@ python run_stage5_e5b.py
 ```
 
 Total work across all six, run in parallel across ~8 cores, is on the order
-of 6-10 hours wall-clock (up from the earlier 4-6 hour estimate: the
-comparison suite grew from 216 to 360 runs and nothing is carried over).
+of 5-9 hours wall-clock (up from the earlier 4-6 hour estimate: the
+comparison suite grew from 216 to 288 runs and nothing is carried over).
 E5b is the long pole, being a single process with no sharding built in.
 
 ## 5. If you have spare cores, shard E5a/E5b too
@@ -107,7 +107,7 @@ E5b is the long pole, being a single process with no sharding built in.
 `run_stage5_e5a.py` and `run_stage5_e5b.py` don't currently take
 `--shard`/`--num-shards` (the verification and stochastic-value harnesses
 don't either, by design — the former for clean exact-solver timing, the
-latter because 10 instances barely benefits). If the other machine has many
+latter because 8 instances barely benefits). If the other machine has many
 cores free after the comparison and sensitivity suites finish, the simplest way to
 parallelize E5a/E5b further is to run multiple copies with disjoint
 `--data`/instance subsets (or ask me to add `--shard` to those two scripts
