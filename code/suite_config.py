@@ -1,11 +1,20 @@
-"""Frozen suite configuration table for CBAR-MDVRP-DATA-v1.0.
+"""Suite configuration for the numerical-experiment dataset.
 
-Transcribed from Table "frozen_data_suites" and the E1-E4 paragraphs of
-t-mdvrp_CBAR_PPBRC_public_benchmark_protocol.tex. Sizes, scenario counts, and
-factor grids that the tex states explicitly are reproduced exactly (see the
-comment above each builder). Values marked ASSUMPTION are not given a
-concrete number in the tex prose and are documented choices, recorded in
-every generated instance's "factors" block so they stay auditable.
+Transcribed from the "Experimental setup" subsection and the instance-suite
+table of t-mdvrp_CBAR_PPBRC_public_benchmark_protocol.tex. Every suite is
+produced by the same generation procedure (geometry.py + demand.py +
+carbon.py + network.py); the suites differ only in the scale and factor
+settings supplied here.
+
+Instance counts are deliberately round (10/30/30/10) except for the
+sensitivity suite, whose size is fixed by its design: a 2^4 factorial has
+16 cells, replicated twice for 32 runs. Rounding that to 30 would unbalance
+the design and destroy the factor attribution the suite exists to provide,
+so it is left at 32 and described in the paper as "16 cells x 2 replicates".
+
+Values marked ASSUMPTION are not given a concrete number in the tex prose
+and are documented calibration choices, recorded in every generated
+instance's "factors" block so they stay auditable.
 
 seed_index is assigned once, globally, over the concatenated list returned
 by all_specs() -- this is what "the same instance index is added to each
@@ -22,17 +31,36 @@ DEFAULT_BOUNDARY_SHARE = 0.20     # ASSUMPTION baseline boundary-customer share
 DEFAULT_BUDGET_FACTOR = 1.00
 DEFAULT_CAPACITY_SCALE = 1.00
 
-# tex names three E2 strata ("tight-budget/low-capacity", "balanced",
-# "loose-budget/high-capacity") without numeric (gamma_B, tau) pairs.
-# ASSUMPTION: reuse the grid endpoints/midpoint E5b freezes explicitly
-# (budget factors {0.90,1.00,1.10}, capacity scales {0.60,1.00,1.40}),
-# paired monotonically so "tight" means both scarce budget and scarce
-# transfer capacity.
-E2_STRATA = [
+# Shared round size grid used by the tuning, comparison, and stochastic-value
+# suites, so instance scale is directly comparable across them.
+SIZE_GRID = [20, 40, 60, 80, 100]
+DEPOT_GRID = [3, 5]
+
+# Verification suite: small enough for the exact MILP to be meaningful.
+VERIFICATION_CUSTOMERS = [10, 20, 30]
+VERIFICATION_DEPOTS = [2, 3]
+VERIFICATION_SCENARIOS = [2, 4, 6, 8, 10]
+
+# The paper names three comparison strata ("tight-budget/low-capacity",
+# "balanced", "loose-budget/high-capacity") without numeric (gamma_B, tau)
+# pairs. ASSUMPTION: reuse the grid endpoints/midpoint the public-benchmark
+# overlay freezes explicitly (budget factors {0.90,1.00,1.10}, capacity
+# scales {0.60,1.00,1.40}), paired monotonically so "tight" means both
+# scarce budget and scarce transfer capacity.
+COMPARISON_STRATA = [
     ("tight_low_capacity", 0.90, 0.60),
     ("balanced", 1.00, 1.00),
     ("loose_high_capacity", 1.10, 1.40),
 ]
+
+# Sensitivity suite: the 2^4 factor levels are stated explicitly in the tex.
+SENSITIVITY_CUSTOMERS = 60
+SENSITIVITY_DEPOTS = 3
+SENSITIVITY_DEMAND_CV = [0.15, 0.35]
+SENSITIVITY_CORRELATION = [-0.25, 0.55]
+SENSITIVITY_BOUNDARY_SHARE = [0.10, 0.30]
+SENSITIVITY_CAPACITY_SCALE = [0.60, 1.40]
+SENSITIVITY_REPLICATES = 2
 
 
 @dataclass
@@ -49,64 +77,55 @@ class SuiteInstanceSpec:
     demand_cv_idio: float = DEFAULT_DEMAND_CV_IDIO
     cross_depot_corr: float = DEFAULT_CROSS_DEPOT_CORR
     boundary_share: float = DEFAULT_BOUNDARY_SHARE
-    nested_prefixes: list | None = None   # E3 only: e.g. [20, 50, 100]
+    nested_prefixes: list | None = None   # stochastic-value suite: e.g. [20, 50, 100]
     seed_index: int = 0                   # assigned in all_specs()
     geometry_group: str | None = None     # specs sharing this key share one
                                            # geometry/demand/scenario seed --
-                                           # used so E2's three carbon-network
-                                           # strata compare the *same*
-                                           # instance under different
-                                           # (budget_factor, capacity_scale)
-                                           # rather than three independently
-                                           # re-randomised instances
+                                           # used so the comparison suite's
+                                           # three carbon-network strata
+                                           # compare the *same* instance under
+                                           # different (budget_factor,
+                                           # capacity_scale) rather than three
+                                           # independently re-randomised
+                                           # instances
 
 
 def build_tuning_specs() -> list[SuiteInstanceSpec]:
-    # tex, Table frozen_data_suites: "6 | 40, 60 | 3, 5 | 20 | 100 val + 200 test".
-    # ASSUMPTION: the 2x2 (customers, depots) grid does not itself reach 6, so
-    # two of the four combinations are replicated with an independent
-    # geometry seed to reach the tabulated count of 6.
-    combos = [(40, 3), (40, 5), (60, 3), (60, 5), (40, 3), (60, 5)]
+    """10 instances: the shared size grid crossed with the depot grid.
+    Used only to fix neighbourhood limits, stopping rules, and wall-clock
+    budgets; excluded from every reported performance comparison."""
     return [
-        SuiteInstanceSpec("tuning", f"tuning_{i + 1:02d}", n_c, n_d,
+        SuiteInstanceSpec("tuning", f"tuning_c{n_c}_d{n_d}", n_c, n_d,
                            train_scenarios=20, eval_banks={"validation": 100, "test": 200})
-        for i, (n_c, n_d) in enumerate(combos)
+        for n_c in SIZE_GRID for n_d in DEPOT_GRID
     ]
 
 
-def build_e1_specs() -> list[SuiteInstanceSpec]:
-    # tex, subsec:e1_verification: |C| in {10,15,20}, |D| in {2,3},
-    # |W| in {3,5,10}, "two independently generated geometries per size
-    # class (36 instances in total)". No train/validation/test split: E1
-    # solves the full finite scenario set exactly against a MILP.
-    specs = []
-    for n_c in (10, 15, 20):
-        for n_d in (2, 3):
-            for n_w in (3, 5, 10):
-                for geom in (1, 2):
-                    specs.append(SuiteInstanceSpec(
-                        "E1", f"e1_c{n_c}_d{n_d}_w{n_w}_g{geom}", n_c, n_d,
-                        train_scenarios=n_w))
-    return specs
+def build_verification_specs() -> list[SuiteInstanceSpec]:
+    """30 instances: 3 customer counts x 2 depot counts x 5 scenario counts.
+    Sizes are held small because every instance is solved by the exact
+    deterministic-equivalent MILP as ground truth. No held-out banks: the
+    finite scenario set is solved exactly."""
+    return [
+        SuiteInstanceSpec("E1", f"e1_c{n_c}_d{n_d}_w{n_w}", n_c, n_d, train_scenarios=n_w)
+        for n_c in VERIFICATION_CUSTOMERS
+        for n_d in VERIFICATION_DEPOTS
+        for n_w in VERIFICATION_SCENARIOS
+    ]
 
 
-def build_e2_specs() -> list[SuiteInstanceSpec]:
-    # tex, subsec:e2_algorithm: |C| in {50,75,100}, |D| in {3,5}, "three
-    # pre-specified carbon-network strata per size class" -> 18 instances,
-    # 20 training scenarios each, no held-out banks (E2 evaluates trained
-    # solutions directly, unlike E3's train/validation/sealed-test design).
-    # The three strata within a size class share one geometry_group so they
-    # are the *same* customers/depots/demand/scenarios under three different
-    # (budget_factor, capacity_scale) overlays -- otherwise a stratum
-    # comparison would be confounded by an independently re-randomised
-    # instance, which is exactly the kind of ex-post confound the tex's
-    # "mechanism diagnostics ... not an ex-post selection rule" language is
-    # trying to keep out.
+def build_comparison_specs() -> list[SuiteInstanceSpec]:
+    """30 instances: 5 customer counts x 2 depot counts x 3 carbon-network
+    strata. The three strata within a size class share one geometry_group so
+    they are the *same* customers/depots/demand/scenarios under three
+    different (budget_factor, capacity_scale) overlays -- otherwise a stratum
+    comparison would be confounded by an independently re-randomised
+    instance."""
     specs = []
-    for n_c in (50, 75, 100):
-        for n_d in (3, 5):
+    for n_c in SIZE_GRID:
+        for n_d in DEPOT_GRID:
             group = f"e2_c{n_c}_d{n_d}"
-            for label, gamma, tau in E2_STRATA:
+            for label, gamma, tau in COMPARISON_STRATA:
                 specs.append(SuiteInstanceSpec(
                     "E2", f"e2_c{n_c}_d{n_d}_{label}", n_c, n_d,
                     train_scenarios=20, budget_factor=gamma, capacity_scale=tau,
@@ -114,43 +133,40 @@ def build_e2_specs() -> list[SuiteInstanceSpec]:
     return specs
 
 
-def build_e3_specs() -> list[SuiteInstanceSpec]:
-    # tex, subsec:experimental_setup + Table: |C| in {50,100}, |D| in {3,5},
-    # nested 20/50/100 training prefixes of one 100-scenario bank, 200
-    # validation + 800 sealed test + 200 distribution-shift scenarios.
-    # ASSUMPTION: two independent geometries per (customers, depots)
-    # combination reach the tabulated count of 8 (2x2x2).
-    specs = []
-    for n_c in (50, 100):
-        for n_d in (3, 5):
-            for geom in (1, 2):
-                specs.append(SuiteInstanceSpec(
-                    "E3", f"e3_c{n_c}_d{n_d}_g{geom}", n_c, n_d,
-                    train_scenarios=100, nested_prefixes=[20, 50, 100],
-                    eval_banks={"validation": 200, "test": 800, "shift": 200}))
-    return specs
+def build_stochastic_value_specs() -> list[SuiteInstanceSpec]:
+    """10 instances: the shared size grid crossed with the depot grid.
+    Training samples of 20/50/100 are nested prefixes of one 100-scenario
+    bank, so performance changes are attributable to sample size rather than
+    to different random draws."""
+    return [
+        SuiteInstanceSpec("E3", f"e3_c{n_c}_d{n_d}", n_c, n_d,
+                           train_scenarios=100, nested_prefixes=[20, 50, 100],
+                           eval_banks={"validation": 200, "test": 800, "shift": 200})
+        for n_c in SIZE_GRID for n_d in DEPOT_GRID
+    ]
 
 
-def build_e4_specs() -> list[SuiteInstanceSpec]:
-    # tex, subsec:e4_recourse_interaction (paragraph after Table):
-    # "replicated 2^4 design over demand coefficient of variation (0.15 or
-    # 0.35), cross-depot correlation (-0.25 or 0.55), boundary-customer
-    # share (0.10 or 0.30), and transfer-capacity scale (0.60 or 1.40)."
-    # Fixed size |C|=60, |D|=3; 16 cells x 2 replicate seeds = 32 instances.
-    # ASSUMPTION: the single "demand coefficient of variation" factor sets
-    # the depot-common cv (sigma); the idiosyncratic cv stays at the
-    # DEFAULT_DEMAND_CV_IDIO baseline, since the tex names only one demand-cv
-    # factor, not two.
+def build_sensitivity_specs() -> list[SuiteInstanceSpec]:
+    """32 instances: a replicated 2^4 factorial over demand coefficient of
+    variation, cross-depot correlation, boundary-customer share, and
+    transfer-capacity scale (16 cells x 2 replicates). Instance size is held
+    fixed so the design attributes performance differences to the four
+    manipulated factors rather than to incidental geometry changes.
+
+    ASSUMPTION: the single "demand coefficient of variation" factor sets the
+    depot-common cv; the idiosyncratic cv stays at its baseline, since the
+    tex names only one demand-cv factor, not two."""
     specs = []
     i = 0
-    for cv in (0.15, 0.35):
-        for corr in (-0.25, 0.55):
-            for bshare in (0.10, 0.30):
-                for tau in (0.60, 1.40):
-                    for rep in (1, 2):
+    for cv in SENSITIVITY_DEMAND_CV:
+        for corr in SENSITIVITY_CORRELATION:
+            for bshare in SENSITIVITY_BOUNDARY_SHARE:
+                for tau in SENSITIVITY_CAPACITY_SCALE:
+                    for _rep in range(SENSITIVITY_REPLICATES):
                         i += 1
                         specs.append(SuiteInstanceSpec(
-                            "E4", f"e4_{i:02d}", 60, 3, train_scenarios=50,
+                            "E4", f"e4_{i:02d}", SENSITIVITY_CUSTOMERS, SENSITIVITY_DEPOTS,
+                            train_scenarios=50,
                             eval_banks={"validation": 100, "test": 400},
                             capacity_scale=tau, demand_cv_common=cv,
                             cross_depot_corr=corr, boundary_share=bshare))
@@ -158,8 +174,8 @@ def build_e4_specs() -> list[SuiteInstanceSpec]:
 
 
 def all_specs() -> list[SuiteInstanceSpec]:
-    specs = (build_tuning_specs() + build_e1_specs() + build_e2_specs()
-             + build_e3_specs() + build_e4_specs())
+    specs = (build_tuning_specs() + build_verification_specs() + build_comparison_specs()
+             + build_stochastic_value_specs() + build_sensitivity_specs())
     next_index = 1
     group_seed: dict[str, int] = {}
     for spec in specs:
