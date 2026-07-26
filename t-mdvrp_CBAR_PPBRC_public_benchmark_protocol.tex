@@ -1430,7 +1430,7 @@ $\tau$ & Sensitivity factor: transfer-capacity scale & $0.60$ or $1.40$ \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:frozen_data_suites} summarises the resulting suites.  For E3, the 20-, 50-, and 100-scenario training samples are nested prefixes of the same 100-scenario bank.  The validation bank is used only to select the training sample size and stopping settings.  The final test bank is sealed until the algorithm, baselines, and parameters have been fixed.  A separate heavy-tailed regime-switching bank is used only for supplementary distribution-shift analysis and does not replace the main same-distribution test bank.
+Table~\ref{tab:frozen_data_suites} summarises the resulting suites.  For E3, the 20-, 50-, and 100-scenario training samples are nested prefixes of the same 100-scenario bank.  The validation bank is used only to select the training sample size and stopping settings.  The test bank is sealed until the algorithm, benchmark methods, and parameters have been fixed.  Evaluating a first-stage budget on a held-out scenario requires re-solving that scenario's routing problem, so the evaluation banks are sized for what can be solved rather than for nominal precision: 100 test scenarios give a standard error of one tenth of the scenario standard deviation, which is sufficient to separate the policies considered here.  A separate heavy-tailed regime-switching bank is used only for supplementary distribution-shift analysis and does not replace the main same-distribution test bank.
 
 \begin{table}[!htbp]
 \centering
@@ -1442,18 +1442,29 @@ Table~\ref{tab:frozen_data_suites} summarises the resulting suites.  For E3, the
 \toprule
 Suite & Instances & $|\mathcal C|$ & $|\mathcal D|$ & Training scenarios & Independent evaluation scenarios \\
 \midrule
-Verification (Section~\ref{subsec:e1_verification})    & 30 & 10, 20, 30 & 2, 3 & 2--10 & -- \\
+Verification (Section~\ref{subsec:e1_verification})    & 30 & 8, 12, 16 & 2, 3 & 2--6 & -- \\
 Comparison (Section~\ref{subsec:e2_algorithm})         & 24 & 20, 50, 75, 100 & 3, 5 & 20 & -- \\
-Stochastic value (Section~\ref{subsec:e3_stochastic_value}) & 8 & 20, 50, 75, 100 & 3, 5 & 20/50/100 & 200 validation $+$ 800 test $+$ 200 shift \\
-Sensitivity (Section~\ref{subsec:e4_recourse_interaction})  & 32 & 60 & 3 & 50 & 100 validation $+$ 400 test \\
-Public benchmark (Section~\ref{subsec:e5_public_benchmark}) & 33/11 & 50--360 & 2--9 & 1/50 & 200 validation $+$ 800 test \\
+Stochastic value (Section~\ref{subsec:e3_stochastic_value}) & 8 & 20, 50, 75, 100 & 3, 5 & 20/50/100 & 50 validation $+$ 100 test $+$ 50 shift \\
+Sensitivity (Section~\ref{subsec:e4_recourse_interaction})  & 32 & 60 & 3 & 50 & 50 validation $+$ 100 test \\
+Public benchmark (Section~\ref{subsec:e5_public_benchmark}) & 33/11 & 50--360 & 2--9 & 1/50 & 50 validation $+$ 100 test \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The comparison suite contains three pre-specified carbon-network strata for every size class: a tight-budget/low-capacity stratum, a balanced stratum, and a loose-budget/high-capacity stratum.  The sensitivity suite uses a replicated $2^4$ design over demand coefficient of variation ($0.15$ or $0.35$), cross-depot correlation ($-0.25$ or $0.55$), boundary-customer share ($0.10$ or $0.30$), and transfer-capacity scale ($0.60$ or $1.40$).  Every generated instance is retained; mechanism diagnostics describe the resulting strata but are never used to remove an unfavourable instance.  The public-benchmark experiment provides external validity using the Cordeau MDVRP instances: all 33 are used for an unmodified deterministic routing regression, while 11 pre-specified instances spanning 50--360 customers and 2--9 depots additionally receive the stochastic-demand and carbon-account overlay.  The original public coordinates, depots, mean demands, capacities, route-duration limits, and vehicle limits are never perturbed or filtered.
 
-Before evaluating solution quality, each instance class is described by deficit--surplus coexistence, depot-price dispersion, transfer use, saturated arcs, and the incidence of external purchase and sale.  These diagnostics establish which mechanisms are active in a pre-specified class; they are not an ex-post selection rule.
+A generated instance is only informative about the carbon mechanism if that
+mechanism is actually active on it: an instance whose depots never fall into
+deficit, or whose transfer arcs never bind, cannot discriminate between
+methods however carefully it is solved.  Each instance class is therefore
+characterised, before any solution quality is compared, by the coexistence of
+deficit and surplus depots, the dispersion of depot prices, the frequency of
+internal transfer, the incidence of saturated transfer arcs, and the
+incidence of external purchase and sale (Table~\ref{tab:mechanism_activation}).
+These quantities are computed from the recourse problem at the reference
+allocation, and are reported for every class, including classes on which the
+mechanism turns out to be weakly active.  They describe the instances; they
+are never used to remove one after its results are seen.
 
 \begin{table}[!htbp]
 \centering
@@ -1507,15 +1518,37 @@ Every reported solution is evaluated with the complete objective
 \eqref{eq:ppbrc_true_scenario} and exact accounting recourse, never with the
 surrogate used inside the search.  We report best, mean, median, and standard
 deviation of the objective, wall-clock time, paired differences between
-methods, and anytime performance.  Paired Wilcoxon signed-rank tests are
-reported as descriptive summaries; raw paired differences and effect sizes are
-treated as the primary evidence, in view of the number of instances per
-suite.
+methods, and anytime performance.
+
+Statistical statements follow three rules.  Paired differences between methods
+on identical instances and seeds are the primary evidence, and are reported
+with their dispersion rather than in the mean alone.  Paired Wilcoxon
+signed-rank tests at the $5\%$ level accompany them as descriptive summaries;
+with 24 instances in the comparison suite such tests have limited power, so a
+non-significant difference is reported as inconclusive rather than as evidence
+of equality.  Where several methods are compared on the same suite, $p$-values
+are Holm-corrected across the family of pairwise comparisons.  Factor effects
+in Section~\ref{subsec:e4_recourse_interaction} are estimated from the
+replicated factorial by least squares, with standard errors obtained from the
+replicate variance.
+
+All experiments are run on an Intel Core i5-1130G7 processor (four physical
+cores, eight threads) with $16$~GB of RAM.  The implementation is in
+Python~3.13 with NumPy~2.3, and every linear and mixed-integer programme --
+the deterministic equivalent, the recourse problem and its dual, and the
+budget master problem -- is solved with CBC through PuLP~3.3.  No commercial
+solver is used, so the exact-solution results can be reproduced without a
+licence.  The exact solver is allowed $1800$~s per instance in
+Section~\ref{subsec:e1_verification}; in every other experiment all methods
+receive an identical per-instance wall-clock budget, stated with that
+experiment.  Because the scenario subproblems at a fixed budget are
+independent, the implementation solves them in parallel, and all reported
+times are wall-clock times for the complete run.
 
 \subsection{Comparison with exact solutions}
 \label{subsec:e1_verification}
 
-Every instance of the verification suite is solved exactly. A MILP solver provides a proven optimum or the best valid bound within the stated time limit; cells in which no integer-feasible incumbent is found within that limit are reported as such rather than silently omitted, and the heuristic is then assessed only against the valid bound. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
+Every instance of the verification suite is solved with the deterministic-equivalent formulation of Section~\ref{subsec:mathematical_formulation} under a $1800$~s limit.  The suite is deliberately small: in a preliminary run at $90$~s, optimality was proved only at $|\mathcal C|=10$ with few scenarios and never at $|\mathcal C|\ge15$, so a suite reaching further would report bounds rather than optima and could not support the comparison this section is for.  Sizes are therefore $|\mathcal C|\in\{8,12,16\}$ with at most six scenarios.  Where optimality is nonetheless not proved within the limit, the cell is reported as such rather than omitted, and the heuristic is assessed against the best valid bound; the proportion of cells in which a proven optimum is available is reported with the results, since it determines how much of the comparison rests on optima rather than on bounds. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
 
 The verification script independently checks customer coverage, route continuity, the number of active vehicles, capacity, route duration, payload conservation, depot emissions, account balance, transfer capacity, first-stage non-anticipativity, and the absence of simultaneous buying and selling above tolerance. For every recourse call it also checks primal--dual equality, price bounds, and complementary conditions on unused, interior, and saturated transfer arcs.
 
@@ -1844,7 +1877,15 @@ governed by \eqref{eq:depot_flexibility}, because restricting it would alter
 the public routing problem.  Every other component uses the same functional
 form and the same parameter values as Table~\ref{tab:parameter_values}, so
 differences in results between the two datasets cannot be attributed to a
-change in the carbon model.  PPBRC, PPBRC-core, SAA-ALNS, and PH-ALNS are compared
+change in the carbon model.
+
+The three budget factors and three transfer-capacity scales give nine derived
+instances per public backbone.  The comparison reported below is made at the
+baseline cell $(\gamma_B,\tau)=(1.00,1.00)$, whose budget and transfer
+capacity are calibrated to the reference emission of the public solution; the
+remaining eight cells are generated and released with the instances, and are
+used only to verify that the ordering of the methods is not specific to a
+single carbon-network setting.  PPBRC, PPBRC-core, SAA-ALNS, and PH-ALNS are compared
 under the same time and seed protocol used in the comparison experiment. The original MDVRP BKS is
 not used to compute an optimality gap for this augmented objective because the
 uncertainty, emissions, and accounting recourse change the problem.

@@ -6,11 +6,11 @@ produced by the same generation procedure (geometry.py + demand.py +
 carbon.py + network.py); the suites differ only in the scale and factor
 settings supplied here.
 
-Instance counts are deliberately round (10/30/30/10) except for the
-sensitivity suite, whose size is fixed by its design: a 2^4 factorial has
-16 cells, replicated twice for 32 runs. Rounding that to 30 would unbalance
-the design and destroy the factor attribution the suite exists to provide,
-so it is left at 32 and described in the paper as "16 cells x 2 replicates".
+Suite sizes: 8 calibration, 30 verification, 24 comparison, 8
+stochastic-value, 32 sensitivity. The sensitivity count is fixed by its
+design -- a 2^4 factorial has 16 cells, replicated twice -- and is not
+rounded, since an unbalanced design would destroy the factor attribution
+the suite exists to provide.
 
 Values marked ASSUMPTION are not given a concrete number in the tex prose
 and are documented calibration choices, recorded in every generated
@@ -39,10 +39,16 @@ DEFAULT_CAPACITY_SCALE = 1.00
 SIZE_GRID = [20, 50, 75, 100]
 DEPOT_GRID = [3, 5]
 
-# Verification suite: small enough for the exact MILP to be meaningful.
-VERIFICATION_CUSTOMERS = [10, 20, 30]
+# Verification suite. Sizes are set from measured exact-solver behaviour,
+# not chosen for appearance: in a 90 s pilot, CBC proved optimality only at
+# |C| = 10 with few scenarios, and never at |C| >= 15. Since this suite
+# exists to compare the heuristic against *proven* optima, it is sized so
+# that most cells are provably solvable within the (much longer) time limit
+# used here; larger sizes belong to the comparison suite, where no exact
+# reference is claimed.
+VERIFICATION_CUSTOMERS = [8, 12, 16]
 VERIFICATION_DEPOTS = [2, 3]
-VERIFICATION_SCENARIOS = [2, 4, 6, 8, 10]
+VERIFICATION_SCENARIOS = [2, 3, 4, 5, 6]
 
 # The paper names three comparison strata ("tight-budget/low-capacity",
 # "balanced", "loose-budget/high-capacity") without numeric (gamma_B, tau)
@@ -94,7 +100,7 @@ class SuiteInstanceSpec:
 
 
 def build_tuning_specs() -> list[SuiteInstanceSpec]:
-    """10 instances: the shared size grid crossed with the depot grid.
+    """8 instances: the shared size grid crossed with the depot grid.
     Used only to fix neighbourhood limits, stopping rules, and wall-clock
     budgets; excluded from every reported performance comparison."""
     return [
@@ -118,7 +124,7 @@ def build_verification_specs() -> list[SuiteInstanceSpec]:
 
 
 def build_comparison_specs() -> list[SuiteInstanceSpec]:
-    """30 instances: 5 customer counts x 2 depot counts x 3 carbon-network
+    """24 instances: 4 customer counts x 2 depot counts x 3 carbon-network
     strata. The three strata within a size class share one geometry_group so
     they are the *same* customers/depots/demand/scenarios under three
     different (budget_factor, capacity_scale) overlays -- otherwise a stratum
@@ -137,14 +143,14 @@ def build_comparison_specs() -> list[SuiteInstanceSpec]:
 
 
 def build_stochastic_value_specs() -> list[SuiteInstanceSpec]:
-    """10 instances: the shared size grid crossed with the depot grid.
+    """8 instances: the shared size grid crossed with the depot grid.
     Training samples of 20/50/100 are nested prefixes of one 100-scenario
     bank, so performance changes are attributable to sample size rather than
     to different random draws."""
     return [
         SuiteInstanceSpec("E3", f"e3_c{n_c}_d{n_d}", n_c, n_d,
                            train_scenarios=100, nested_prefixes=[20, 50, 100],
-                           eval_banks={"validation": 200, "test": 800, "shift": 200})
+                           eval_banks={"validation": 50, "test": 100, "shift": 50})
         for n_c in SIZE_GRID for n_d in DEPOT_GRID
     ]
 
@@ -170,7 +176,7 @@ def build_sensitivity_specs() -> list[SuiteInstanceSpec]:
                         specs.append(SuiteInstanceSpec(
                             "E4", f"e4_{i:02d}", SENSITIVITY_CUSTOMERS, SENSITIVITY_DEPOTS,
                             train_scenarios=50,
-                            eval_banks={"validation": 100, "test": 400},
+                            eval_banks={"validation": 50, "test": 100},
                             capacity_scale=tau, demand_cv_common=cv,
                             cross_depot_corr=corr, boundary_share=bshare))
     return specs
