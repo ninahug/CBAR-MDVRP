@@ -793,8 +793,7 @@ at one depot cannot be optimal: reducing both variables by their smaller value
 preserves \eqref{eq:account_balance} and strictly reduces the objective by the
 buy--sell spread.  No additional binary market-status variable is required.
 
-\subsubsection{Complexity and structural properties}
-
+\paragraph{Complexity}
 \begin{proposition}[Complexity]
 \label{prop:complexity}
 The CBAR-MDVRP is $\mathcal{NP}$-hard in the strong sense.
@@ -844,7 +843,7 @@ the internal-transfer and external-trading variables remain in the carbon
 accounts, and their minimum cost is the recourse value introduced below.
 \end{proof}
 
-\subsubsection{Valid inequalities and symmetry breaking}
+\paragraph{Valid inequalities and symmetry breaking}
 \label{subsec:strengthening}
 
 The scenario-wise arc-load inequalities
@@ -874,7 +873,7 @@ they are satisfied by every optimal solution of the formulation above, and
 are added to tighten its linear relaxation rather than to alter the set of
 feasible routing plans.
 
-\subsection{Compact two-stage form and special cases}
+\subsubsection{Compact two-stage form}
 \label{subsec:model_interpretation}
 
 Let $\mathcal X(q^\omega)$ denote the feasible set of the scenario routing and
@@ -902,26 +901,7 @@ where
 and $\Psi_{\overline T}$ is the network-constrained carbon-recourse value
 function developed in Section~\ref{sec:carbon_recourse}.
 
-Three institutional regimes are nested in the formulation.  Setting all
-transfer capacities to zero gives independent depot accounts.  Positive
-frictions and finite capacities give the network-constrained regime studied in
-this paper.  If the transfer network is strongly connected, all transfer
-frictions are zero, and capacities are sufficiently large never to bind, the
-accounts can be rebalanced without friction and the model collapses to a fully
-pooled corporate account.
-
-The last regime also identifies a degeneracy.  Under frictionless uncapacitated
-pooling, only the sum $\sum_dB_d=B^{\mathrm{corp}}$ affects recourse, so the
-distribution of the first-stage budget may be non-unique and economically
-irrelevant.  The allocation can likewise lose value when
-$p^{\mathrm{buy}}=p^{\mathrm{sell}}$, or when every depot is always on the same
-side of its budget so that no cross-depot netting opportunity arises.  The
-first-stage decision is therefore economically active only when demand and
-emission responsibilities are heterogeneous across depots and scenarios and
-when internal transfers or external transactions are genuinely frictional.
-These cases are limiting institutional regimes rather than the default
-setting of the model; Corollary~\ref{cor:institutional_nesting} establishes
-that their recourse costs are ordered.
+Three institutional regimes are nested in \eqref{eq:two_stage_value_form}: independent depot accounts when every transfer capacity is zero, the network-constrained regime studied here when frictions are positive and capacities finite, and a fully pooled corporate account when transfers are frictionless and never binding. Section~\ref{subsec:institutional} establishes the relation between them, and identifies the conditions under which the first-stage allocation ceases to matter.
 
 %%=====================================================================
 \section{Structure of the Carbon Recourse}
@@ -1193,6 +1173,7 @@ $\lambda_{d'}-\lambda_d\le0$ and $\lambda_d-\lambda_{d'}\le0$.
 \end{proof}
 
 \subsection{Subgradients and institutional regimes}
+\label{subsec:institutional}
 \label{subsec:recourse_subgradient}
 
 \begin{proposition}[Optimal depot prices are recourse subgradients]
@@ -1299,7 +1280,7 @@ should be imposed.  Transfer-volume statistics from an arbitrary zero-cost
 optimal flow are not reported.
 \end{remark}
 
-The three regimes described informally in
+The three regimes introduced in
 Section~\ref{subsec:model_interpretation} can now be ranked.
 
 \begin{corollary}[Institutional nesting]
@@ -1554,6 +1535,7 @@ governs only the search carried out at a fixed price.
 
 \subsection{The budget subproblem}
 \label{subsec:budget_recourse_block}
+\label{subsec:ppbrc_properties}
 
 Suppose the route emissions $\widehat E_d^\omega$ are fixed for every scenario. The first-stage budget and the accounting decisions of all scenarios are then determined by the linear programme
 \begin{align}
@@ -1585,12 +1567,8 @@ Let $\nu$ be the multiplier of the corporate budget equality, and let $\alpha_d^
 \end{equation}
 Every depot whose budget lies strictly between its bounds therefore carries the same expected marginal carbon value, while a depot at its lower or upper bound satisfies the corresponding one-sided condition.
 
-\subsection{Properties and complexity}
-\label{subsec:ppbrc_properties}
-
-The method is heuristic in its routing component and exact in its budget
-component. The following statement makes the second half precise, and is the
-only optimality guarantee the method carries.
+The exactness of this step is the one optimality guarantee the method carries,
+and is worth stating precisely.
 
 \begin{proposition}[Exactness of the budget step]
 \label{prop:ppbrc_budget_exact}
