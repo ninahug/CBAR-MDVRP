@@ -17,6 +17,7 @@
 \usepackage{booktabs}
 \usepackage[ruled,vlined]{algorithm2e}
 \usepackage{multirow}
+\usepackage{enumitem}
 \usepackage{amsthm}
 
 
@@ -394,10 +395,10 @@ apply because the model contains no carbon account.}
 \end{minipage}
 \end{table}
 
-\section{Problem Setting and Two-Stage Stochastic Formulation}
+\section{Problem Description and Formulation}
 \label{sec:problem_formulation}
 
-\subsection{Decision setting and timing}
+\subsection{Problem description}
 \label{subsec:problem_description}
 
 We consider a distribution firm that operates a set of depots
@@ -444,7 +445,64 @@ the customer assignments, vehicle routes, route payloads, depot emissions,
 internal transfers, and external trades for that scenario.  Only $B$ is
 non-anticipative; all routing and recourse decisions are scenario dependent.
 
-\subsection{Network, uncertainty, and notation}
+The problem can now be stated compactly.  Given a set of depots with known
+locations, fleets and carbon accounts, a set of customers with known locations
+and depot eligibility, a finite set of demand scenarios with known
+probabilities, an authorised internal transfer network with directional
+frictions and capacities, and external purchase and sale prices, the
+CBAR-MDVRP is to determine (i) a non-anticipative allocation of the corporate
+carbon budget across depots and, for each demand scenario, (ii) an assignment
+of customers to eligible depots, (iii) a set of feasible vehicle routes, and
+(iv) the internal carbon-credit transfers and external trades that settle the
+resulting depot accounts, so as to minimise the expected sum of dispatch,
+travel, internal-transfer and external-settlement costs.
+
+\subsection{Assumptions}
+\label{subsec:assumptions}
+
+The model rests on the following assumptions, stated explicitly because
+several of them delimit what the formulation is intended to represent.
+
+\begin{enumerate}[label=(A\arabic*),leftmargin=*]
+\item \textbf{Centralised decision making.} Headquarters is the single
+decision maker and the sole legal counterparty in the external carbon market.
+Depots are responsibility centres and do not act strategically, so the
+allocation is a control instrument rather than the outcome of a negotiation
+or an internal auction.
+
+\item \textbf{Binding first-stage allocation.} Depot budgets are chosen before
+demand is observed and are not revised once it is. Were they costlessly
+revisable, the first-stage decision would carry no operational content.
+
+\item \textbf{Restricted internal transfer.} Carbon responsibility moves
+between depots only along authorised arcs, at a directional friction cost and
+subject to a capacity limit, representing approval, audit and internal-control
+requirements. A frictionless uncapacitated network is retained only as an
+institutional benchmark.
+
+\item \textbf{Exogenous carbon prices with a positive spread.} External
+purchase and sale prices are exogenous, constant across scenarios, and satisfy
+$p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0$. The firm is a price taker, which is
+appropriate for a single distribution firm in an established compliance
+market.
+
+\item \textbf{Scenario-invariant structure.} Customer locations, depot
+eligibility, arc data, fleet parameters and carbon prices are identical across
+scenarios; only customer demands vary. Demand uncertainty is represented by a
+finite scenario set with known probabilities.
+
+\item \textbf{Complete recourse.} Every scenario admits a feasible
+second-stage solution: each customer can be served by at least one eligible
+vehicle, and the available fleet can cover realised demand. Together with
+external trading at finite prices, this makes the recourse problem feasible
+and bounded for every first-stage decision.
+\end{enumerate}
+
+Assumption (A6) concerns operational feasibility only. It does not assume that
+any depot can meet its carbon budget, which is precisely the imbalance the
+model is built to resolve.
+
+\subsection{Notation}
 \label{subsec:notation}
 
 The distribution system is defined on a directed graph
@@ -521,52 +579,56 @@ p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0.
 The strict spread rules out simultaneous purchase and sale as an optimal
 accounting action and prevents external-market arbitrage.
 
-Table~\ref{tab:main_notation} summarises the main notation introduced by the
-reformulation.
+Table~\ref{tab:main_notation} collects the sets, parameters and decision
+variables used throughout.
 
 \begin{table}[!htbp]
 \centering
-\caption{Main notation for the two-stage carbon-budget model.}
+\caption{Notation.}
 \label{tab:main_notation}
 \footnotesize
 \renewcommand{\arraystretch}{1.15}
-\begin{tabular}{@{}lp{0.76\textwidth}@{}}
+\begin{tabular}{@{}lp{0.74\textwidth}@{}}
 \toprule
-Symbol & Meaning \\
+Symbol & Definition \\
 \midrule
-$\mathcal W,\pi_\omega$ & Demand scenarios and their probabilities. \\
-$q_i^\omega$ & Demand of customer $i$ in scenario $\omega$. \\
-$B^{\mathrm{corp}}$ & Corporate carbon budget available before demand is observed. \\
-$B_d$ & First-stage internal carbon budget delegated to depot $d$. \\
-$\mathcal G^T=(\mathcal D,\mathcal A^T)$ & Directed internal carbon-credit transfer network. \\
-$\kappa_{dd'},\overline T_{dd'}$ & Unit friction and capacity of transfer arc $(d,d')$. \\
-$p^{\mathrm{buy}},p^{\mathrm{sell}}$ & External purchase and sale prices. \\
-$E_d^\omega$ & Route emission charged to depot $d$ in scenario $\omega$. \\
-$t_{dd'}^\omega$ & Internal credits transferred from depot $d$ to depot $d'$ in scenario $\omega$. \\
-$b_d^\omega,s_d^\omega$ & External purchase and sale assigned to depot $d$ in scenario $\omega$. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[!htbp]
-\centering
-\caption{Decision variables.}
-\label{tab:decision_variables}
-\footnotesize
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{@{}lp{0.76\textwidth}@{}}
-\toprule
-Variable & Meaning \\
+\multicolumn{2}{@{}l}{\textit{Sets and indices}}\\
+$\mathcal C$ & Customers, indexed by $i,j$. \\
+$\mathcal D$ & Depots, indexed by $d,d'$. \\
+$\mathcal W$ & Demand scenarios, indexed by $\omega$. \\
+$\mathcal K,\ \mathcal K_d$ & Vehicles, indexed by $k$; vehicles stationed at depot $d$. \\
+$\mathcal T_d,\ \mathcal K_{d,t}$ & Vehicle classes at depot $d$; identical vehicles of class $t$. \\
+$\Omega_i\subseteq\mathcal D$ & Depots eligible to serve customer $i$; $h(i)\in\Omega_i$ is its home depot. \\
+$\mathcal C_k$ & Customers that vehicle $k$ may serve, $\mathcal C_k=\{i:d(k)\in\Omega_i\}$. \\
+$\mathcal V_k,\ \mathcal A_k$ & Nodes and arcs available to vehicle $k$, including its origin $o_k$ and terminal $r_k$. \\
+$\mathcal A^T$ & Authorised internal transfer arcs, forming $\mathcal G^T=(\mathcal D,\mathcal A^T)$. \\
+$\delta_T^+(d),\ \delta_T^-(d)$ & Transfer arcs leaving and entering depot $d$. \\
 \midrule
-$B_d$ & First-stage carbon budget delegated to depot $d$; common to all scenarios. \\
-$y_{id}^\omega$ & One if customer $i$ is assigned to depot $d$ in scenario $\omega$. \\
-$z_i^{k\omega}$ & One if vehicle $k$ serves customer $i$ in scenario $\omega$. \\
-$x_{ij}^{k\omega}$ & One if vehicle $k$ traverses arc $(i,j)$ in scenario $\omega$. \\
-$a_k^\omega$ & One if vehicle $k$ is dispatched in scenario $\omega$. \\
-$f_{ij}^{k\omega}$ & Payload carried by vehicle $k$ on arc $(i,j)$ in scenario $\omega$. \\
-$E_d^\omega$ & Emission of routes rooted at depot $d$ in scenario $\omega$. \\
-$t_{dd'}^\omega$ & Internal carbon credit transferred from $d$ to $d'$ in scenario $\omega$. \\
-$b_d^\omega,s_d^\omega$ & External purchase and sale assigned to depot $d$ in scenario $\omega$. \\
+\multicolumn{2}{@{}l}{\textit{Parameters}}\\
+$\pi_\omega$ & Probability of scenario $\omega$, $\sum_\omega\pi_\omega=1$. \\
+$q_i^\omega$ & Demand of customer $i$ in scenario $\omega$, $q_i^\omega>0$. \\
+$d_{ij},\ \tau_{ij},\ c_{ij}$ & Distance, travel time and operating cost of arc $(i,j)$. \\
+$\sigma_i$ & Service duration at customer $i$. \\
+$Q_k,\ F_k,\ H_k$ & Capacity, fixed dispatch cost and maximum route duration of vehicle $k$. \\
+$\rho_k^0,\ \rho_k^Q$ & Empty- and full-load fuel rates of vehicle $k$, $\rho_k^Q\ge\rho_k^0\ge0$. \\
+$\theta$ & Conversion factor from fuel use to carbon emission, $\theta>0$. \\
+$B^{\mathrm{corp}}$ & Corporate carbon budget for the operating cycle. \\
+$\underline B_d,\ \overline B_d$ & Lower and upper responsibility bounds on the budget of depot $d$. \\
+$\kappa_{dd'},\ \overline T_{dd'}$ & Unit friction cost and capacity of transfer arc $(d,d')$. \\
+$p^{\mathrm{buy}},\ p^{\mathrm{sell}}$ & External purchase and sale prices, $p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0$. \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{First-stage decision variable}}\\
+$B_d$ & Carbon budget delegated to depot $d$; common to all scenarios. \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{Second-stage decision variables (scenario $\omega$)}}\\
+$y_{id}^\omega$ & $1$ if customer $i$ is assigned to depot $d$. \\
+$z_i^{k\omega}$ & $1$ if vehicle $k$ serves customer $i$. \\
+$x_{ij}^{k\omega}$ & $1$ if vehicle $k$ traverses arc $(i,j)$. \\
+$a_k^\omega$ & $1$ if vehicle $k$ is dispatched. \\
+$f_{ij}^{k\omega}$ & Payload carried by vehicle $k$ on arc $(i,j)$. \\
+$E_d^\omega$ & Emission of the routes rooted at depot $d$. \\
+$t_{dd'}^\omega$ & Internal carbon credit transferred from depot $d$ to depot $d'$. \\
+$b_d^\omega,\ s_d^\omega$ & External purchase and sale assigned to the account of depot $d$. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -620,10 +682,11 @@ and, for every $\omega\in\mathcal W$, the routing constraints
 &&\forall k\in\mathcal K,
 \label{eq:c4}\\
 &\sum_{j\in\mathcal C_k}x_{o_kj}^{k\omega}=a_k^\omega,
-\qquad
-\sum_{i\in\mathcal C_k}x_{ir_k}^{k\omega}=a_k^\omega,
 &&\forall k\in\mathcal K,
-\label{eq:c56}\\
+\label{eq:c5}\\
+&\sum_{i\in\mathcal C_k}x_{ir_k}^{k\omega}=a_k^\omega,
+&&\forall k\in\mathcal K,
+\label{eq:c6}\\
 &\sum_{j\in\mathcal C_k\cup\{r_k\}\setminus\{i\}}
  x_{ij}^{k\omega}=z_i^{k\omega},
 &&\forall k\in\mathcal K,\ \forall i\in\mathcal C_k,
@@ -731,7 +794,31 @@ at one depot cannot be optimal: reducing both variables by their smaller value
 preserves \eqref{eq:account_balance} and strictly reduces the objective by the
 buy--sell spread.  No additional binary market-status variable is required.
 
-\paragraph{Scenario-wise combinatorial core.}
+\begin{proposition}[Complexity]
+\label{prop:complexity}
+The CBAR-MDVRP is $\mathcal{NP}$-hard in the strong sense.
+\end{proposition}
+
+\begin{proof}
+Consider an instance with a single scenario of probability one, a single
+depot, a corporate budget large enough that
+$\underline B_d\le B^{\mathrm{corp}}$ is satisfied with
+$B_d^{\phantom{|}}\ge E_d$ at any feasible routing, and
+$p^{\mathrm{sell}}=0$. The carbon account is then slack at every solution,
+the transfer and trading variables are zero at optimality, and the objective
+reduces to dispatch and travel cost over capacitated routes rooted at one
+depot. This is the capacitated vehicle routing problem, which is
+$\mathcal{NP}$-hard in the strong sense. Allowing several depots and several
+scenarios only enlarges the instance class.
+\end{proof}
+
+Proposition~\ref{prop:complexity} concerns the routing layer, which the model
+inherits. The carbon layer does not by itself create the difficulty: for
+fixed routing, Section~\ref{sec:carbon_recourse} shows that what remains is a
+linear programme. The interaction of the two layers is what the solution
+method in Section~\ref{sec:methodology} is designed to exploit.
+
+\paragraph{Scenario-wise combinatorial core}
 \label{subsec:reduction}
 
 \begin{corollary}[Scenario-wise combinatorial core]
@@ -756,7 +843,7 @@ the internal-transfer and external-trading variables remain in the carbon
 accounts, and their minimum cost is the recourse value introduced below.
 \end{proof}
 
-\paragraph{Valid inequalities and symmetry breaking.}
+\paragraph{Valid inequalities and symmetry breaking}
 \label{subsec:strengthening}
 
 The scenario-wise arc-load inequalities
@@ -781,7 +868,10 @@ a_k^\omega\ge a_{k'}^\omega,
 \label{eq:vi3}
 \end{equation}
 removes dispatch-index symmetry without excluding all representatives of any
-physical solution.
+physical solution.  Inequalities \eqref{eq:vi1}--\eqref{eq:vi3} are valid:
+they are satisfied by every optimal solution of the formulation above, and
+are added to tighten its linear relaxation rather than to alter the set of
+feasible routing plans.
 
 \subsection{Value-function form and institutional special cases}
 \label{subsec:model_interpretation}
@@ -1232,7 +1322,7 @@ under a more restrictive regime remains feasible under the less restrictive
 regime, so minimising over the nested feasible sets gives the inequalities.
 \end{proof}
 
-\paragraph{Degenerate budget-allocation cases.}
+\paragraph{Degenerate budget-allocation cases}
 The special cases also delimit the economic scope of the first stage.  Under
 frictionless full pooling, any feasible allocation with the same corporate
 total produces the same recourse value.  If
@@ -1304,7 +1394,7 @@ PPBRC does not assume this condition automatically. It first checks whether the 
 
 The routing block uses standard feasible route edits inside four problem-specific neighbourhood classes. The contribution lies not in the elementary edits themselves but in their activation, direction, and evaluation through $(\lambda^\omega,\mu^\omega)$.
 
-\paragraph{Boundary-customer reassignment.}
+\paragraph{Boundary-customer reassignment}
 For a boundary customer $i$ currently served by depot $d$, the method considers every $d'\in\Omega_i\setminus\{d\}$. A candidate removes $i$ from its current route and inserts it into a feasible route rooted at $d'$, or opens a vehicle when necessary. Its price prediction is
 \begin{equation}
  \widehat\Delta_{i,d\to d'}^\omega
@@ -1315,19 +1405,19 @@ For a boundary customer $i$ currently served by depot $d$, the method considers 
 \end{equation}
 Candidates from a high-price depot to a lower-price depot are prioritised, but no reassignment is accepted without checking capacity, route duration, fleet availability, load-dependent emissions, and the exact objective \eqref{eq:ppbrc_true_scenario}.
 
-\paragraph{Emission compression at high-price depots.}
+\paragraph{Emission compression at high-price depots}
 Depots with $\lambda_d^\omega$ close to $p^{\mathrm{buy}}$ receive priority for intra-route relocate, inter-route relocate, swap, 2-opt, 2-opt*, route merge, and route split moves. Candidate generation targets long loaded arcs, weak vehicle utilisation, and customer orders with high payload-distance contributions. The ranking score combines the exact operating-cost increment with the depot-price-weighted emission increment rather than distance alone.
 
-\paragraph{Service absorption at low-price depots.}
+\paragraph{Service absorption at low-price depots}
 Depots with $\lambda_d^\omega$ close to $p^{\mathrm{sell}}$ are considered as receivers of eligible boundary customers. This neighbourhood prevents the search from treating emission reduction as a uniform requirement across depots: an additional unit of emission can be less costly at a depot with a low marginal recourse price, provided the routing increment remains economical.
 
-\paragraph{Transfer-congestion release.}
+\paragraph{Transfer-congestion release}
 If $t_{dd'}^\omega=\overline T_{dd'}$ and $\mu_{dd'}^\omega>0$, the transfer arc is economically congested. PPBRC then prioritises moves that reduce the receiving depot's deficit, reassign its eligible customers to alternative depots, or redirect service toward depots connected through non-congested transfer paths. This neighbourhood links physical routing decisions to the capacity shadow prices of the internal carbon network.
 
-\paragraph{Compound cross-depot intensification.}
+\paragraph{Compound cross-depot intensification}
 Single-customer moves may be blocked even when a coordinated exchange is profitable.  After the elementary neighbourhoods reach a local optimum, PPBRC therefore activates a restricted intensification layer comprising paired boundary-customer reassignment, cross-depot route exchange, cross-depot 2-opt*, and exact recombination of two selected routes.  Candidate depot pairs are restricted to large price gaps or positive congestion multipliers, and route pairs are restricted by geographic proximity.  These compound moves are evaluated with the same complete objective as elementary moves; they strengthen the local search without altering the price-polyhedral coordination principle.
 
-\paragraph{Candidate management.}
+\paragraph{Candidate management}
 For each activated class, candidate generation is restricted before exact evaluation.  For a customer--depot pair, only a small number of least-cost feasible insertion positions are retained; customer swaps and route pairs are similarly limited by eligibility, proximity, price gaps, and congestion. Candidates with $L_m^\omega\ge\varepsilon_{\mathrm{prune}}$ are safely discarded by \eqref{eq:move_lower_bound}.  The surviving shortlist combines candidates with the smallest price-polyhedral lower bounds and candidates with the smallest operating-cost increments, preventing a single local linearisation from dominating the entire search.  At most $K_{\mathrm{eval}}$ candidates are re-evaluated with the exact oracle. Elementary neighbourhoods are exhausted first; the restricted compound layer is activated only when no elementary improvement remains and adequate time remains. A move is accepted only if its true objective decrease exceeds $\varepsilon_{\mathrm{imp}}$.
 
 \subsection{Exact budget--recourse optimisation}
@@ -1980,7 +2070,7 @@ route-duration limits, or maximum vehicle counts.  The conversion script,
 source hashes, converted-file hashes, scenario seeds, and solution-file parsing
 status are archived with the computational supplement.
 
-\paragraph{E5a: regression to the classical MDVRP.}
+\paragraph{E5a: regression to the classical MDVRP}
 The first test removes every paper-specific extension: demand is deterministic,
 the carbon and accounting terms are disabled, and the objective is the original
 Euclidean route duration.  The routing engine is run on all 33 public instances
@@ -2005,7 +2095,7 @@ Large  &  & 160--360 & 4--9 & & & \\
 \end{tabular}}
 \end{table}
 
-\paragraph{E5b: CBAR on public routing backbones.}
+\paragraph{E5b: CBAR on public routing backbones}
 The complete CBAR-MDVRP is evaluated on the pre-specified subset
 \{p01,p02,p03,p12,p04,p05,p06,p07,p15,p18,p21\}.  Because the public
 instances are deterministic classical MDVRP instances, they carry none of
@@ -2172,21 +2262,21 @@ The implementation records random seeds, solver versions, hardware, time limits,
 \section{Instance and scenario generation}
 \label{app:scenario_generation}
 
-\paragraph{Literature basis.}
+\paragraph{Literature basis}
 The generator follows established conventions rather than ad hoc choices where a convention exists.  Depot placement and the core/boundary customer split follow the classical multi-depot geometry of \citet{cordeau1997vrp}; the clustered component of customer generation follows the controlled clustered-instance methodology of \citet{uchoa2017benchmark}, adopted here specifically to avoid instances that are ``too homogeneous'' in the sense that motivates their benchmark.  The correlated-shock demand model (a common depot-level factor plus an idiosyncratic customer term) is the standard risk-decomposition device used throughout the stochastic-routing literature surveyed by \citet{gendreau1996stochastic}.  The load-dependent emission function is the fuel-consumption model of \citet{bektas2011pollution} (already used as a comparison point in Table~\ref{tab:literature_taxonomy}), so the same emission mechanism grounds both the literature review and the instance generator.  Parameters internal to this paper's own experimental design -- the E2 carbon-network strata, the E4 factor levels, and the specific numeric spread/heterogeneity constants not fixed by the conventions above -- are calibration choices rather than literature-sourced values; they are recorded in full alongside each instance (see the validation protocol described below) rather than only in this prose, so they remain auditable.
 
-\paragraph{Geometry and eligibility.}
+\paragraph{Geometry and eligibility}
 Depots are placed on a perturbed regular polygon in a $10\times10$ Euclidean region, following the classical multi-depot layouts of \citet{cordeau1997vrp}.  Core customers are drawn from depot-centred Gaussian clusters, the clustered-generation device of \citet{uchoa2017benchmark}.  Boundary customers are drawn around the midpoint of adjacent depots and are eligible for the corresponding depot pair; all other customers have only their home depot.  The requested boundary share is fixed before coordinates are generated.  Depot demand scales are heterogeneous and are generated independently of the scenario streams.
 
-\paragraph{Demand streams.}
+\paragraph{Demand streams}
 Base demands are positive lognormal draws with depot-specific scales.  Optimisation, validation, final test, and distribution-shift scenarios use random-stream bases $2{,}000{,}000$, $3{,}000{,}000$, $4{,}000{,}000$, and $5{,}000{,}000$, respectively; geometry uses the disjoint base $1{,}000{,}000$.  The same instance index is added to each base, so every stream can be reproduced from the public seed manifest.  The validation and final test banks follow \eqref{eq:scenario_generator}, whose common-factor-plus-idiosyncratic-shock structure is the standard stochastic-demand decomposition surveyed by \citet{gendreau1996stochastic}.  The supplementary shift bank replaces Gaussian depot shocks by standardised Student-$t_5$ shocks and adds a low-probability asymmetric depot-demand regime.  It is used only to test distributional sensitivity.
 
 For the stochastic-value suite, the training samples of size 20, 50, and 100 are nested prefixes of one bank.  This construction attributes changes in performance to sample size rather than to different random draws.  The validation bank may be inspected for selecting the sample size and stopping settings.  The sealed test bank is evaluated only after all algorithmic choices have been fixed.  Exact row overlap among training, validation, and test banks is required to be zero.
 
-\paragraph{Carbon parameters and transfer network.}
+\paragraph{Carbon parameters and transfer network}
 Reference emissions are obtained from deterministic home-depot angle-sweep routes under base demand, using the load-dependent fuel-consumption model of \citet{bektas2011pollution}.  Equation~\eqref{eq:budget_stringency} sets the corporate budget, and depot bounds are $0.45$ and $1.60$ times the reference allocation.  The transfer network is a bidirectional ring, augmented by two bidirectional chords when $|\mathcal D|=5$.  Arc costs contain fixed directional asymmetry.  Arc capacity is proportional to the mean reference emission of its two incident depots and the pre-specified capacity scale.  No parameter is recalibrated after final-instance performance is observed.
 
-\paragraph{Validation protocol.}
+\paragraph{Validation protocol}
 Every instance is checked before it is used, not after algorithm performance has been observed.  The checks cover dimensional consistency with the requested factor settings; positivity of coordinates, demands, and capacities; individual-vehicle feasibility of every scenario demand; fleet capacity slack under mean demand; feasibility of the depot budget bounds relative to the corporate budget; and separation of the random streams used for geometry and for the training, validation, test, and distribution-shift draws, so that no draw is reused across roles.  An instance failing any check is regenerated; it is never silently dropped after results are known.  Section~\ref{app:verification_checklist} describes the corresponding checks applied to every reported solution.  The generation code, the full instance set, and the random seeds needed to reproduce every draw are available in the repository accompanying this paper.
 
 \section{Verification checklist}
