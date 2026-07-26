@@ -1309,7 +1309,33 @@ Depot--customer and customer--customer distances are precomputed, and route cost
 \section{Computational Experiments}
 \label{sec:computational_experiments}
 
-This section reports five experiments.  Section~\ref{subsec:e1_verification} verifies the deterministic-equivalent model, its recourse duals, and the accuracy of the proposed algorithm against exact solutions.  Section~\ref{subsec:e2_algorithm} compares the algorithm with external benchmark methods and isolates the contribution of its individual mechanisms.  Section~\ref{subsec:e3_stochastic_value} quantifies the value of the stochastic first-stage allocation.  Section~\ref{subsec:e4_recourse_interaction} examines, through a factorial design, how the operational and accounting recourse channels interact.  Section~\ref{subsec:e5_public_benchmark} evaluates the method on public benchmark instances.  Section~\ref{subsec:claims_evidence} states the scope and the limitations of the resulting evidence.  The algorithm architecture, benchmark methods, instance classes, scenario streams, and search seeds are all fixed before any reported run.
+Section~\ref{subsec:experimental_setup} states the experimental design: the
+test instances, the parameter settings, the algorithms compared, and the
+performance measures.  Five experiments follow, in the order in which their
+conclusions depend on one another.
+
+Section~\ref{subsec:e1_verification} validates the deterministic-equivalent
+model, its recourse duals, and the accuracy of the proposed algorithm against
+exact solutions, and so establishes that later comparisons are made on a
+correct implementation.  Section~\ref{subsec:e2_algorithm} then compares the
+algorithm with external benchmark methods and attributes any advantage to its
+individual mechanisms.  Section~\ref{subsec:e3_stochastic_value} turns from
+the algorithm to the model, and asks whether treating the budget allocation
+as a stochastic decision is worthwhile at all, relative to a deterministic
+expected-value allocation and to simple managerial rules; this is measured by
+the value of the stochastic solution and the expected value of perfect
+information.  Section~\ref{subsec:e4_recourse_interaction} asks a different
+question -- not whether the model is worthwhile, but under which operating
+conditions its two recourse channels are complementary or substitutable --
+and answers it with a replicated factorial design over the demand and
+transfer-network environment.  Section~\ref{subsec:e5_public_benchmark}
+repeats the routing and mechanism tests on public benchmark instances, whose
+spatial and capacity structure is not of our construction.
+Section~\ref{subsec:claims_evidence} summarises what the five experiments
+jointly establish, and what they do not.
+
+The algorithm architecture, benchmark methods, instance classes, scenario
+streams, and search seeds are all fixed before any reported run.
 
 \subsection{Experimental design}
 \label{subsec:experimental_setup}
@@ -1442,7 +1468,7 @@ Class & Deficit--surplus coexistence (\%) & Mean price dispersion & Transfer-use
 \end{tabular}}
 \end{table}
 
-\subsubsection{Algorithms compared}
+\subsubsection{Compared algorithms}
 \label{subsubsec:algorithms_compared}
 
 Six methods are compared.  Two are external benchmarks drawn from established
@@ -1464,7 +1490,7 @@ Equal-allocation, expected-demand, and reference-emission budget rules are
 additionally used in Section~\ref{subsec:e3_stochastic_value} as managerial
 reference policies for the first-stage decision.
 
-\subsubsection{Performance measures and computational environment}
+\subsubsection{Performance measures}
 \label{subsubsec:performance_measures}
 
 All methods are run under identical hardware, wall-clock limits, training
@@ -1485,7 +1511,7 @@ reported as descriptive summaries; raw paired differences and effect sizes are
 treated as the primary evidence, in view of the number of instances per
 suite.
 
-\subsection{Model verification and solution accuracy}
+\subsection{Model and algorithm validation}
 \label{subsec:e1_verification}
 
 Every instance of the verification suite is solved exactly. A MILP solver provides a proven optimum or the best valid bound within the stated time limit; cells in which no integer-feasible incumbent is found within that limit are reported as such rather than silently omitted, and the heuristic is then assessed only against the valid bound. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
@@ -1569,7 +1595,7 @@ PPBRC                      & & & & & \\
 \end{tabular}}
 \end{table}
 
-\subsection{Value of the stochastic solution}
+\subsection{Value of stochastic budget allocation}
 \label{subsec:e3_stochastic_value}
 
 This experiment quantifies how much is gained by treating the first-stage
@@ -1729,7 +1755,7 @@ Transfer-capacity scale         & & & \\
 \end{tabular}
 \end{table}
 
-\subsection{Results on public benchmark instances}
+\subsection{Performance on public benchmark instances}
 \label{subsec:e5_public_benchmark}
 
 The synthetic suites are necessary for controlled activation of demand risk,
@@ -1846,7 +1872,7 @@ problem on externally supplied spatial and capacity structures. A favourable
 E5a result cannot validate the carbon model, and an E5b objective cannot be
 compared numerically with the original MDVRP BKS.
 
-\subsection{Scope and limitations of the experimental evidence}
+\subsection{Summary of the experimental evidence}
 \label{subsec:claims_evidence}
 
 Each experiment supports a specific and bounded claim.  The verification experiment establishes numerical consistency and small-instance solution quality, but cannot establish scalability.  The comparison experiment identifies the contribution of price-polyhedral coordination on the tested instances, but cannot prove dominance on all instances.  The stochastic-value experiment quantifies the value of stochastic optimisation under the chosen scenario model, and does not establish robustness to misspecified distributions.  The sensitivity experiment identifies empirical complementarity or substitution between the two recourse channels, and does not prove a universal sign for $I$.  Within the public-benchmark experiment, E5a establishes routing compatibility with a recognised MDVRP benchmark but does not validate the carbon-account extension, and E5b provides external spatial and capacity structure for the augmented model but does not inherit the original MDVRP best-known solutions, because its objective and information structure differ.
