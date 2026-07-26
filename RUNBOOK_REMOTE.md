@@ -53,11 +53,11 @@ Work to be done, per stage:
 | stage | runs |
 |---|---|
 | verification (`run_stage1_e1.py`) | 30 instances |
-| comparison (`run_stage2_e2.py`) | 24 instances x 2 seeds x 6 methods = 288 |
+| comparison (`run_stage2_e2.py`) | 24 instances x 5 seeds x 6 methods = 720 |
 | stochastic value (`run_stage3_e3.py`) | 8 instances |
-| sensitivity (`run_stage4_e4.py`) | 32 instances x 2 methods = 64 |
+| sensitivity (`run_stage4_e4.py`) | 32 instances x 4 recourse regimes = 128 solves |
 | public benchmark E5a (`run_stage5_e5a.py`) | 33 instances |
-| public benchmark E5b (`run_stage5_e5b.py`) | 11 instances x 2 seeds x 4 methods = 88 |
+| public benchmark E5b (`run_stage5_e5b.py`) | 11 instances x 5 seeds x 4 methods = 220 |
 
 ## 4. Run each stage
 
@@ -76,7 +76,7 @@ cd code
 # "proven optimal" -- see exact_model.py's integer_feasible check).
 python run_stage1_e1.py
 
-# Comparison (288 runs). Shard across N processes, one per core, e.g. N=8:
+# Comparison (720 runs). Shard across N processes, one per core, e.g. N=8:
 python run_stage2_e2.py --num-shards 8 --shard 0   # ... --shard 1 ... up to N-1
 
 # Stochastic value (8 instances; already tuned to a tractable
@@ -84,13 +84,13 @@ python run_stage2_e2.py --num-shards 8 --shard 0   # ... --shard 1 ... up to N-1
 # implied 10+ hours):
 python run_stage3_e3.py
 
-# Sensitivity (64 runs), shard similarly:
+# Sensitivity (32 instances, each solved under 4 recourse regimes), shard similarly:
 python run_stage4_e4.py --num-shards N --shard 0   # ... up to N-1
 
 # Public benchmark E5a (33 instances, classic MDVRP vs BKS):
 python run_stage5_e5a.py
 
-# Public benchmark E5b (88 runs at the baseline g1.00_t1.00 grid cell; the other
+# Public benchmark E5b (220 runs at the baseline g1.00_t1.00 grid cell; the other
 # 8 budget/capacity variants per instance are already generated under
 # data/generated/public_v1/E5b_cbar/<instance>/g*_t*.json for a later
 # robustness pass via --variants):
@@ -98,9 +98,13 @@ python run_stage5_e5b.py
 ```
 
 Total work across all six, run in parallel across ~8 cores, is on the order
-of 5-9 hours wall-clock (up from the earlier 4-6 hour estimate: the
-comparison suite grew from 216 to 288 runs and nothing is carried over).
-E5b is the long pole, being a single process with no sharding built in.
+of 20-30 hours wall-clock. The sensitivity suite is heavier than its instance
+count suggests, because each of its 32 instances is solved four times, once
+per recourse regime. The seed count now follows the paper's protocol of
+five search seeds, which puts the comparison suite at 720 runs and E5b at 220,
+and nothing is carried over from earlier partial runs. E5b is the long pole,
+being a single process with no sharding built in; if the machine has cores to
+spare, see the next section.
 
 ## 5. If you have spare cores, shard E5a/E5b too
 

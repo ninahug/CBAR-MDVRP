@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
-"""Stage 2 / E2: external-baseline and internal-mechanism comparison over
-the 18 E2 instances (tex, subsec:e2_algorithm).
+"""Comparison with benchmark algorithms (paper Section 6.3) over the 24
+instances of the comparison suite.
 
-Given wall-clock constraints (a single PPBRC solve at full published-quality
-settings takes minutes per instance x seed x method, and the frozen protocol
-calls for 18 instances x 5 seeds x 6 methods = 540 runs), this script:
-  - runs a reduced-but-real seed count (--seeds, default 3 of the 5 frozen
-    seeds {91001,91002,91003}) and moderate ALNS settings by default,
-    explicitly labelled as a pilot-scale expansion of the tex's own
-    tab:e2_external_pilot (which the tex itself already frames as "not the
-    final publication experiment" over just 4 instances/2 seeds) -- this
-    covers all 18 instances instead of 4, at reduced per-run search effort;
-  - is resumable (skips rows already in --out) and shardable (--shard/
-    --num-shards) so multiple processes can run the grid in parallel across
-    CPU cores.
+Runs all six methods of methods.ALL_METHODS on every instance with each of the
+five search seeds the paper fixes, giving 24 x 5 x 6 = 720 runs. The search
+effort per run (--alns-iterations, --outer-rounds, --price-rounds) is exposed
+so that the grid can be completed within an available time budget; the paper
+reports the settings actually used.
 
-Mechanism diagnostics (tab:mechanism_activation) are computed once per
-instance from the seed=91001 PPBRC run, per the tex's framing that these
-diagnostics describe a "pre-specified instance class", not a per-seed metric.
+The script is resumable -- it skips rows already present in --out -- and
+shardable via --shard/--num-shards, so the grid can be split across cores.
+Do not run more shards than physical cores: oversubscription slows the grid
+non-linearly.
+
+Mechanism-activation diagnostics (paper Table 7) are computed once per
+instance, from the PPBRC run at the first seed, because they describe a
+pre-specified instance class rather than a per-seed outcome.
 """
 from __future__ import annotations
 
@@ -40,7 +38,7 @@ def main():
     ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E2")
     ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage2_e2\stage2_e2_results.jsonl")
     ap.add_argument("--diagnostics-out", default=r"D:\CBAR_MDVRP\data\results\stage2_e2\stage2_e2_diagnostics.jsonl")
-    ap.add_argument("--seeds", type=int, nargs="*", default=methods.FROZEN_SEEDS[:3])
+    ap.add_argument("--seeds", type=int, nargs="*", default=methods.FROZEN_SEEDS)
     ap.add_argument("--methods", nargs="*", default=methods.ALL_METHODS)
     ap.add_argument("--outer-rounds", type=int, default=2)
     ap.add_argument("--price-rounds", type=int, default=2)

@@ -36,7 +36,7 @@ def main():
     ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\public_v1\E5b_cbar")
     ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage5_e5b\stage5_e5b_results.jsonl")
     ap.add_argument("--variants", nargs="*", default=["g1p00_t1p00"])
-    ap.add_argument("--seeds", type=int, nargs="*", default=[91001, 91002])
+    ap.add_argument("--seeds", type=int, nargs="*", default=methods.FROZEN_SEEDS)
     ap.add_argument("--methods", nargs="*", default=["SAA-ALNS", "PH-ALNS", "PPBRC-core", "PPBRC"])
     ap.add_argument("--outer-rounds", type=int, default=2)
     ap.add_argument("--price-rounds", type=int, default=2)
