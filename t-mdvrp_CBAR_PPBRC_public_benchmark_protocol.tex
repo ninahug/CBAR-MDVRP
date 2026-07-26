@@ -503,7 +503,7 @@ model is built to resolve.
 \subsection{Mathematical model}
 \label{subsec:mathematical_formulation}
 
-\paragraph{Notation}
+\subsubsection{Notation}
 
 The distribution system is defined on a directed graph
 $\mathcal G=(\mathcal V,\mathcal A)$.  The customer set is $\mathcal C$ and the
@@ -633,7 +633,7 @@ $b_d^\omega,\ s_d^\omega$ & External purchase and sale assigned to the account o
 \end{tabular}
 \end{table}
 
-\paragraph{Deterministic-equivalent formulation}
+\subsubsection{The deterministic equivalent}
 
 The first-stage variable is $B_d\ge0$.  For every scenario $\omega$, the
 binary variables are $y_{id}^\omega$ (customer--depot assignment),
@@ -793,6 +793,8 @@ at one depot cannot be optimal: reducing both variables by their smaller value
 preserves \eqref{eq:account_balance} and strictly reduces the objective by the
 buy--sell spread.  No additional binary market-status variable is required.
 
+\subsubsection{Complexity and structural properties}
+
 \begin{proposition}[Complexity]
 \label{prop:complexity}
 The CBAR-MDVRP is $\mathcal{NP}$-hard in the strong sense.
@@ -842,7 +844,7 @@ the internal-transfer and external-trading variables remain in the carbon
 accounts, and their minimum cost is the recourse value introduced below.
 \end{proof}
 
-\paragraph{Valid inequalities and symmetry breaking}
+\subsubsection{Valid inequalities and symmetry breaking}
 \label{subsec:strengthening}
 
 The scenario-wise arc-load inequalities
@@ -2265,7 +2267,40 @@ compared numerically with the original MDVRP BKS.
 \subsection{Summary of the experimental evidence}
 \label{subsec:claims_evidence}
 
-Each experiment supports a specific and bounded claim.  The verification experiment establishes numerical consistency and small-instance solution quality, but cannot establish scalability.  The comparison experiment identifies the contribution of price-polyhedral coordination on the tested instances, but cannot prove dominance on all instances.  The stochastic-value experiment quantifies the value of stochastic optimisation under the chosen scenario model, and does not establish robustness to misspecified distributions.  The sensitivity experiment identifies empirical complementarity or substitution between the two recourse channels, and does not prove a universal sign for $I$.  Within the public-benchmark experiment, E5a establishes routing compatibility with a recognised MDVRP benchmark but does not validate the carbon-account extension, and E5b provides external spatial and capacity structure for the augmented model but does not inherit the original MDVRP best-known solutions, because its objective and information structure differ.
+Each experiment supports a bounded claim, and it is worth recording where the
+boundaries lie. The comparison with exact solutions
+(Section~\ref{subsec:e1_verification}) establishes that the formulation, its
+duals, and the implementation agree with an independent exact method, and
+measures solution quality where optimality can be certified; it says nothing
+about instances too large to solve exactly. The comparison with benchmark
+algorithms (Section~\ref{subsec:e2_algorithm}) identifies the contribution of
+price-polyhedral coordination on the instances tested and, through the
+restricted variants, attributes it to particular mechanisms; it does not
+establish dominance beyond those instances. The analysis of stochastic budget
+allocation (Section~\ref{subsec:e3_stochastic_value}) quantifies the value of
+optimising the first-stage decision under the scenario model used to generate
+the instances, and is therefore silent on robustness to a misspecified
+distribution; the distribution-shift bank probes this question but does not
+settle it. The sensitivity analysis
+(Section~\ref{subsec:e4_recourse_interaction}) estimates the interaction
+between the two recourse channels over a balanced factorial design, and so
+identifies the conditions under which they complement or substitute for one
+another within that design; it does not establish a universal sign for $I$.
+Within the public-benchmark experiment
+(Section~\ref{subsec:e5_public_benchmark}), the classical regression
+establishes compatibility with a recognised routing benchmark but validates
+nothing about the carbon-account extension, while the augmented instances
+supply external spatial and capacity structure for the complete model and
+cannot be compared with the published best-known solutions, whose objective
+and information structure differ from ours.
+
+Taken together, the five experiments are intended to establish that the model
+is solved correctly, that the proposed coordination is worth its complexity,
+that modelling the allocation stochastically is worth its data requirements,
+and that the two recourse channels interact in a way that depends
+systematically on the operating environment. They are not intended to
+establish that the method dominates all alternatives, nor that the
+conclusions transfer to demand distributions outside those tested.
 
 %%=====================================================================
 \section{Conclusion}
@@ -2342,27 +2377,27 @@ on which the present formulation rests.
 \section{PPBRC implementation details}
 \label{app:ppbrc_details}
 
-\subsection{Initial routes and initial budget}
-Initial routes are built by cheapest-feasible insertion under capacity and route-duration constraints, opening a vehicle when no feasible insertion exists; complete PPBRC repeats this construction from several random customer orders and retains the best. The initial budget is 2-opt improvement. The reference-emission budget is
+\paragraph{Initial routes and initial budget}
+Initial routes are built by cheapest-feasible insertion under capacity and route-duration constraints, opening a vehicle when no feasible insertion exists; complete PPBRC repeats this construction from several random customer orders and retains the best. Route improvement is left to the neighbourhood search rather than to a separate deterministic pass. The initial budget is proportional to expected reference emissions,
 \[
  B_d^0=B^{\mathrm{corp}}\frac{\sum_\omega\pi_\omega E_d^{0,\omega}}{\sum_{h\in\mathcal D}\sum_\omega\pi_\omega E_h^{0,\omega}},
 \]
 then projected onto the bounded simplex defined by \eqref{eq:budget_total}--\eqref{eq:budget_bounds}.
 
-\subsection{Neighbourhood evaluation}
+\paragraph{Neighbourhood evaluation}
 A candidate is evaluated by recomputing the affected routes, so that the change in payload-distance emissions is accounted for exactly rather than approximated by a distance increment. Every candidate is checked against depot eligibility, vehicle capacity, route duration, and fleet availability. Within an outer iteration the price vector is fixed, so a candidate is scored by the price-linearised objective of Section~\ref{subsec:price_neighbourhoods} and no recourse problem is solved inside the neighbourhood loop; the exact recourse oracle is called once per price refit and once per outer iteration to evaluate the complete objective.
 
-\subsection{Canonical recourse flows and the pooled regime}
+\paragraph{Canonical recourse flows and the pooled regime}
 The primary recourse solve minimises economic cost.  If its optimal flow is non-unique, a secondary solve fixes the primary optimum within tolerance and minimises total internal transfer.  This lexicographic rule removes gratuitous cycles and makes transfer-use statistics reproducible.  The fully pooled institutional benchmark is evaluated directly by \eqref{eq:pooled_recourse}; no depot-to-depot flow statistic is inferred from a zero-cost complete transfer graph.
 
-\subsection{Stopping and reproducibility}
-The implementation records random seeds, solver versions, hardware, time limits, the number of outer iterations $R$, the number of price refits $L$, the neighbourhood-search iteration count, and the number of oracle calls. Parameter values are calibrated on the separate tuning instances of Section~\ref{subsubsec:test_instances} and are never selected on instances whose results are reported.
+\paragraph{Stopping and reproducibility}
+The implementation records random seeds, solver versions, hardware, time limits, the number of outer iterations $R$, the number of price refits $L$, and the neighbourhood-search iteration count. Parameter values are calibrated on the separate tuning instances of Section~\ref{subsubsec:test_instances} and are never selected on instances whose results are reported.
 
 \section{Instance and scenario generation}
 \label{app:scenario_generation}
 
 \paragraph{Literature basis}
-The generator follows established conventions rather than ad hoc choices where a convention exists.  Depot placement and the core/boundary customer split follow the classical multi-depot geometry of \citet{cordeau1997vrp}; the clustered component of customer generation follows the controlled clustered-instance methodology of \citet{uchoa2017benchmark}, adopted here specifically to avoid instances that are ``too homogeneous'' in the sense that motivates their benchmark.  The correlated-shock demand model (a common depot-level factor plus an idiosyncratic customer term) is the standard risk-decomposition device used throughout the stochastic-routing literature surveyed by \citet{gendreau1996stochastic}.  The load-dependent emission function is the fuel-consumption model of \citet{bektas2011pollution} (already used as a comparison point in Table~\ref{tab:literature_taxonomy}), so the same emission mechanism grounds both the literature review and the instance generator.  Parameters internal to this paper's own experimental design -- the E2 carbon-network strata, the E4 factor levels, and the specific numeric spread/heterogeneity constants not fixed by the conventions above -- are calibration choices rather than literature-sourced values; they are recorded in full alongside each instance (see the validation protocol described below) rather than only in this prose, so they remain auditable.
+The generator follows established conventions rather than ad hoc choices where a convention exists.  Depot placement and the core/boundary customer split follow the classical multi-depot geometry of \citet{cordeau1997vrp}; the clustered component of customer generation follows the controlled clustered-instance methodology of \citet{uchoa2017benchmark}, adopted here specifically to avoid instances that are ``too homogeneous'' in the sense that motivates their benchmark.  The correlated-shock demand model (a common depot-level factor plus an idiosyncratic customer term) is the standard risk-decomposition device used throughout the stochastic-routing literature surveyed by \citet{gendreau1996stochastic}.  The load-dependent emission function is the fuel-consumption model of \citet{bektas2011pollution} (already used as a comparison point in Table~\ref{tab:literature_taxonomy}), so the same emission mechanism grounds both the literature review and the instance generator.  Parameters internal to this paper's own experimental design -- the carbon-network strata of the comparison suite, the factor levels of the sensitivity suite, and the specific numeric spread/heterogeneity constants not fixed by the conventions above -- are calibration choices rather than literature-sourced values; they are recorded in full alongside each instance (see the validation protocol described below) rather than only in this prose, so they remain auditable.
 
 \paragraph{Geometry and eligibility}
 Depots are placed on a perturbed regular polygon in a $10\times10$ Euclidean region, following the classical multi-depot layouts of \citet{cordeau1997vrp}.  Core customers are drawn from depot-centred Gaussian clusters, the clustered-generation device of \citet{uchoa2017benchmark}.  Boundary customers are drawn around the midpoint of adjacent depots and are eligible for the corresponding depot pair; all other customers have only their home depot.  The requested boundary share is fixed before coordinates are generated.  Depot demand scales are heterogeneous and are generated independently of the scenario streams.
