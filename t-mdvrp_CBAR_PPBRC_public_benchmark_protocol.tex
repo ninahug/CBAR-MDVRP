@@ -398,7 +398,7 @@ apply because the model contains no carbon account.}
 \section{Problem Description and Formulation}
 \label{sec:problem_formulation}
 
-\subsection{Problem description}
+\subsection{Problem description and assumptions}
 \label{subsec:problem_description}
 
 We consider a distribution firm that operates a set of depots
@@ -457,9 +457,7 @@ of customers to eligible depots, (iii) a set of feasible vehicle routes, and
 resulting depot accounts, so as to minimise the expected sum of dispatch,
 travel, internal-transfer and external-settlement costs.
 
-\subsection{Assumptions}
-\label{subsec:assumptions}
-
+\paragraph{Assumptions}
 The model rests on the following assumptions, stated explicitly because
 several of them delimit what the formulation is intended to represent.
 
@@ -502,8 +500,10 @@ Assumption (A6) concerns operational feasibility only. It does not assume that
 any depot can meet its carbon budget, which is precisely the imbalance the
 model is built to resolve.
 
-\subsection{Notation}
-\label{subsec:notation}
+\subsection{Mathematical model}
+\label{subsec:mathematical_formulation}
+
+\paragraph{Notation}
 
 The distribution system is defined on a directed graph
 $\mathcal G=(\mathcal V,\mathcal A)$.  The customer set is $\mathcal C$ and the
@@ -633,8 +633,7 @@ $b_d^\omega,\ s_d^\omega$ & External purchase and sale assigned to the account o
 \end{tabular}
 \end{table}
 
-\subsection{Deterministic-equivalent mixed-integer formulation}
-\label{subsec:mathematical_formulation}
+\paragraph{Deterministic-equivalent formulation}
 
 The first-stage variable is $B_d\ge0$.  For every scenario $\omega$, the
 binary variables are $y_{id}^\omega$ (customer--depot assignment),
@@ -873,7 +872,7 @@ they are satisfied by every optimal solution of the formulation above, and
 are added to tighten its linear relaxation rather than to alter the set of
 feasible routing plans.
 
-\subsection{Value-function form and institutional special cases}
+\subsection{Compact two-stage form and special cases}
 \label{subsec:model_interpretation}
 
 Let $\mathcal X(q^\omega)$ denote the feasible set of the scenario routing and
