@@ -1314,10 +1314,11 @@ test instances, the parameter settings, the algorithms compared, and the
 performance measures.  Five experiments follow, in the order in which their
 conclusions depend on one another.
 
-Section~\ref{subsec:e1_verification} validates the deterministic-equivalent
-model, its recourse duals, and the accuracy of the proposed algorithm against
-exact solutions, and so establishes that later comparisons are made on a
-correct implementation.  Section~\ref{subsec:e2_algorithm} then compares the
+Section~\ref{subsec:e1_verification} compares the proposed algorithm with
+exact solutions on instances small enough to be solved to optimality, and
+verifies the deterministic-equivalent model and its recourse duals against an
+independent exact formulation; it thereby establishes that the later
+comparisons rest on a correct implementation.  Section~\ref{subsec:e2_algorithm} then compares the
 algorithm with external benchmark methods and attributes any advantage to its
 individual mechanisms.  Section~\ref{subsec:e3_stochastic_value} turns from
 the algorithm to the model, and asks whether treating the budget allocation
@@ -1511,7 +1512,7 @@ reported as descriptive summaries; raw paired differences and effect sizes are
 treated as the primary evidence, in view of the number of instances per
 suite.
 
-\subsection{Model and algorithm validation}
+\subsection{Comparison with exact solutions}
 \label{subsec:e1_verification}
 
 Every instance of the verification suite is solved exactly. A MILP solver provides a proven optimum or the best valid bound within the stated time limit; cells in which no integer-feasible incumbent is found within that limit are reported as such rather than silently omitted, and the heuristic is then assessed only against the valid bound. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
@@ -1677,7 +1678,7 @@ Training scenarios & Policy & Mean test cost & Difference vs.\ reference-emissio
 \end{tabular}
 \end{table}
 
-\subsection{Sensitivity analysis}
+\subsection{Sensitivity analysis of recourse interaction}
 \label{subsec:e4_recourse_interaction}
 
 The model provides two distinct recourse channels: operational recourse, which
