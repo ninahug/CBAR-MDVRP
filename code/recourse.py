@@ -111,6 +111,55 @@ def solve_recourse(g: dict[int, float], depots: list[int], transfer_arcs: list[d
     }
 
 
+def net_external_position(primal: dict, depots: list[int]) -> dict[int, float]:
+    """r_d = b_d - s_d, the net external trade at each depot in a recourse
+    solution. Together with the dual prices this is all the state the
+    critical-region certificate needs."""
+    return {d: primal["b"][d] - primal["s"][d] for d in depots}
+
+
+def certify_same_region(lam: dict[int, float], r: dict[int, float],
+                         delta: dict[int, float], p_buy: float, p_sell: float,
+                         tol: float = 1e-9) -> bool:
+    """Certify that the deficit may move from g to g + delta without leaving
+    the region on which the current prices stay optimal.
+
+    Psi_Tbar is piecewise linear, and is affine on the region where one
+    optimal dual solution remains optimal. If the perturbation delta can be
+    absorbed by the external trades alone, at the depots whose prices already
+    permit them, then the incumbent dual (lambda, mu) remains optimal at
+    g + delta: it is still dual feasible, since dual feasibility does not
+    involve g, and complementary slackness still holds against the adjusted
+    primal. On that region
+
+        Psi_Tbar(g + delta) - Psi_Tbar(g) = lambda^T delta
+
+    exactly, not merely as a lower bound. Keeping the internal transfers fixed,
+    depot d must end with net external position r_d + delta_d, and
+    complementary slackness restricts its sign:
+
+      lambda_d = p_buy   -> only purchase is priced correctly, so r_d + delta_d >= 0
+      lambda_d = p_sell  -> only sale is priced correctly, so r_d + delta_d <= 0
+      otherwise          -> neither is, so r_d + delta_d must vanish
+
+    The test is sufficient, not necessary: a perturbation that would require
+    rerouting internal transfers is simply not certified, and is then handled
+    by re-solving. It costs O(|D|) and never changes which moves are
+    admissible, only whether they can be evaluated without an LP.
+    """
+    for d, lam_d in lam.items():
+        new_r = r.get(d, 0.0) + delta.get(d, 0.0)
+        if abs(lam_d - p_buy) <= 1e-7:
+            if new_r < -tol:
+                return False
+        elif abs(lam_d - p_sell) <= 1e-7:
+            if new_r > tol:
+                return False
+        elif abs(new_r) > tol:
+            return False
+    return True
+
+
 def check_complementarity(primal: dict, dual: dict, transfer_arcs: list[dict],
                            p_buy: float, p_sell: float, tol: float = 1e-6) -> list[str]:
     """Prop. complementarity, checks 1-5."""

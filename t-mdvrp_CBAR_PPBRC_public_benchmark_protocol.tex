@@ -1504,6 +1504,69 @@ so that $L_m^\omega$ underestimates the true change in cost. No modification
 with $L_m^\omega\ge0$ can improve the scenario objective. The converse fails:
 a negative value identifies a candidate, not an improvement.
 
+The inequality is loose only where the modification moves the deficit onto a
+different piece of $\Psi_{\overline T}$. Since $\Psi_{\overline T}$ is
+piecewise linear, it is affine wherever one dual solution stays optimal, and
+there the bound holds with equality. The following condition detects that case
+at the cost of one arithmetic test per depot, without solving anything. Write
+$r_d=b_d^\omega-s_d^\omega$ for the net external position of depot $d$ in the
+current recourse solution.
+
+\begin{proposition}[Exactness on a certified region]
+\label{prop:certified_region}
+Let $(\lambda^\omega,\mu^\omega)$ be optimal for the recourse problem at
+deficit $g^\omega$, and let $\Delta E_m^\omega$ be the emission change of a
+modification $m$. Suppose that for every depot $d$,
+\begin{equation}
+ r_d+\Delta E_{m,d}^\omega
+ \begin{cases}
+ \ge0, & \lambda_d^\omega=p^{\mathrm{buy}},\\
+ \le0, & \lambda_d^\omega=p^{\mathrm{sell}},\\
+ =0, & p^{\mathrm{sell}}<\lambda_d^\omega<p^{\mathrm{buy}}.
+ \end{cases}
+ \label{eq:certified_region}
+\end{equation}
+Then $(\lambda^\omega,\mu^\omega)$ remains optimal at
+$g^\omega+\Delta E_m^\omega$, and
+\begin{equation*}
+ \Delta Z_m^\omega=L_m^\omega .
+\end{equation*}
+\end{proposition}
+
+\begin{proof}
+Dual feasibility of $(\lambda^\omega,\mu^\omega)$ is a property of the
+prices, frictions and capacities alone and does not involve the right-hand
+side, so it is unaffected by the perturbation. It therefore suffices to
+exhibit a primal solution at $g^\omega+\Delta E_m^\omega$ that is feasible
+and complementary to it. Keep the internal transfers $t^\omega$ unchanged and
+set the external trades so that depot $d$ has net position
+$r_d+\Delta E_{m,d}^\omega$, taking $b_d=[r_d+\Delta E_{m,d}^\omega]_+$ and
+$s_d=[-(r_d+\Delta E_{m,d}^\omega)]_+$. This satisfies the balance equations
+by construction and respects the transfer capacities, which are untouched.
+For complementarity, a depot may purchase only where
+$\lambda_d^\omega=p^{\mathrm{buy}}$ and sell only where
+$\lambda_d^\omega=p^{\mathrm{sell}}$; \eqref{eq:certified_region} is
+precisely the requirement that the new net position have the sign each case
+permits, and that it vanish where neither does. The transfer complementarity
+conditions of Proposition~\ref{prop:complementarity} involve $t^\omega$ and
+$\lambda^\omega$, both unchanged. Hence the pair remains optimal, and
+$\Psi_{\overline T}$ is affine with gradient $\lambda^\omega$ along the
+segment joining the two deficits, giving
+$\Psi_{\overline T}(g^\omega+\Delta E_m^\omega)-\Psi_{\overline T}(g^\omega)
+=(\lambda^\omega)^\top\Delta E_m^\omega$ and therefore
+$\Delta Z_m^\omega=\Delta C_m^\omega+(\lambda^\omega)^\top\Delta E_m^\omega
+=L_m^\omega$.
+\end{proof}
+
+Condition \eqref{eq:certified_region} is sufficient but not necessary: a
+modification that would be absorbed by rerouting internal transfers is not
+certified, and is treated as any other uncertified candidate. Its value is
+that the search knows, for a subset of its moves, that the linearised
+objective it is optimising is the exact one, and this is established without
+solving a recourse problem. The proportion of moves so certified is an
+outcome of the instance rather than a parameter, and is reported with the
+computational results.
+
 For a fixed price vector $\lambda^\omega$, the routing subproblem of scenario
 $\omega$ is
 \begin{equation}
@@ -1940,7 +2003,11 @@ differences across strata isolate the effect of budget stringency and transfer
 capacity rather than of instance identity.
 
 Table~\ref{tab:e2_external} reports the external comparison and
-Table~\ref{tab:e2_internal} the mechanism attribution.  Alongside the
+Table~\ref{tab:e2_internal} the mechanism attribution. The latter also
+reports the proportion of emission changes for which
+Proposition~\ref{prop:certified_region} certifies that the linearised
+objective coincides with the exact one, which measures how much of the search
+is provably operating on the true objective rather than on a surrogate.  Alongside the
 objective, we report the consensus residual of PH-ALNS, since a
 progressive-hedging adaptation for an integer routing problem need not reach
 agreement among its scenario budget copies, and only its exactly recovered
@@ -1967,14 +2034,14 @@ PPBRC    & & & & & & \\
 \caption{Contribution of individual mechanisms on the comparison suite.}
 \label{tab:e2_internal}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrrrrrr}
 \toprule
-Variant & Mean objective & Std. & Difference vs.\ PPBRC (\%) & Wins/ties/losses & Time (s)\\
+Variant & Mean objective & Std. & Difference vs.\ PPBRC (\%) & Wins/ties/losses & Certified (\%) & Time (s)\\
 \midrule
-Cost-only coordination     & & & & & \\
-Price-guided routing only  & & & & & \\
-PPBRC-core                 & & & & & \\
-PPBRC                      & & & & & \\
+Cost-only coordination     & & & & & & \\
+Price-guided routing only  & & & & & & \\
+PPBRC-core                 & & & & & & \\
+PPBRC                      & & & & & & \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -2428,6 +2495,16 @@ then projected onto the bounded simplex defined by \eqref{eq:budget_total}--\eqr
 
 \paragraph{Neighbourhood evaluation}
 A candidate is evaluated by recomputing the affected routes, so that the change in payload-distance emissions is accounted for exactly rather than approximated by a distance increment. Every candidate is checked against depot eligibility, vehicle capacity, route duration, and fleet availability. Within an outer iteration the price vector is fixed, so a candidate is scored by the price-linearised objective of Section~\ref{subsec:price_neighbourhoods} and no recourse problem is solved inside the neighbourhood loop; the exact recourse oracle is called once per price refit and once per outer iteration to evaluate the complete objective.
+
+\paragraph{Exactness certification}
+After each price refit the implementation evaluates
+\eqref{eq:certified_region} against the emission change produced by the
+preceding round of search, at a cost of one comparison per depot. The test
+gates no decision: a certified change is one whose linearised and exact
+values are known to agree, and an uncertified change is handled exactly as
+before. Its purpose is to quantify, rather than to alter, the agreement
+between the objective the search optimises and the objective by which
+solutions are reported.
 
 \paragraph{Canonical recourse flows and the pooled regime}
 The primary recourse solve minimises economic cost.  If its optimal flow is non-unique, a secondary solve fixes the primary optimum within tolerance and minimises total internal transfer.  This lexicographic rule removes gratuitous cycles and makes transfer-use statistics reproducible.  The fully pooled institutional benchmark is evaluated directly by \eqref{eq:pooled_recourse}; no depot-to-depot flow statistic is inferred from a zero-cost complete transfer graph.

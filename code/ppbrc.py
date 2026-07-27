@@ -372,13 +372,36 @@ def alns_solve(inst: Instance, demand: dict[int, float], lam: dict[int, float],
 
 
 def refit_prices(inst: Instance, sol: Solution, B: dict[int, float]) -> dict:
-    """Layer 2: solve the recourse dual at g = E(S) - B to get the next
-    price vector lambda^omega (and mu^omega for reference)."""
+    """Layer 2: solve the recourse at g = E(S) - B to get the next price
+    vector lambda^omega.
+
+    The primal is solved as well as the dual, because the net external
+    position r_d = b_d - s_d is what the exactness certificate of
+    Proposition 8 tests against: together with lambda it determines whether a
+    given emission change leaves the deficit on the same piece of Psi.
+    """
     E = sol.emissions()
     D = list(sol.routes.keys())
     g = {d: E[d] - B[d] for d in D}
-    dual = recourse.solve_recourse_dual(g, D, inst.transfer_arcs, inst.prices["buy"], inst.prices["sell"])
-    return {"lambda": dual["lambda"], "mu": dual["mu"], "g": g, "E": E}
+    p_buy, p_sell = inst.prices["buy"], inst.prices["sell"]
+    dual = recourse.solve_recourse_dual(g, D, inst.transfer_arcs, p_buy, p_sell)
+    primal = recourse.solve_recourse_primal(g, D, inst.transfer_arcs, p_buy, p_sell)
+    return {
+        "lambda": dual["lambda"],
+        "mu": dual["mu"],
+        "g": g,
+        "E": E,
+        "r": recourse.net_external_position(primal, D),
+    }
+
+
+def certified_exact(inst: Instance, lam: dict[int, float], r: dict[int, float],
+                     E_before: dict[int, float], E_after: dict[int, float]) -> bool:
+    """Whether Proposition 8 certifies that the price-linearised change in
+    cost between two routing plans equals the exact change. Costs O(|D|)."""
+    delta = {d: E_after.get(d, 0.0) - E_before.get(d, 0.0) for d in E_after}
+    return recourse.certify_same_region(lam, r, delta, inst.prices["buy"],
+                                         inst.prices["sell"])
 
 
 def solve_scenario(inst: Instance, demand: dict[int, float], B: dict[int, float],
@@ -401,17 +424,29 @@ def solve_scenario(inst: Instance, demand: dict[int, float], B: dict[int, float]
     lam = {d: (inst.prices["buy"] + inst.prices["sell"]) / 2 for d in D}
     sol = initial
     last_lam = None
+    prev_state = None          # (lambda, r, E) from the previous refit
+    certified = tested = 0
     for r in range(price_rounds):
         sol = alns_solve(inst, demand, lam, iterations=alns_iterations, seed=seed + 1000 * r, initial=sol,
                           diversify=diversify, destroy_ops=destroy_ops)
         refit = refit_prices(inst, sol, B)
+
+        if prev_state is not None:
+            prev_lam, prev_r, prev_E = prev_state
+            tested += 1
+            if certified_exact(inst, prev_lam, prev_r, prev_E, refit["E"]):
+                certified += 1
+        prev_state = (refit["lambda"], refit["r"], refit["E"])
+
         new_lam = refit["lambda"]
         if last_lam is not None and all(abs(new_lam[d] - last_lam[d]) < 1e-4 for d in D):
             lam = new_lam
             break
         lam = new_lam
         last_lam = new_lam
-    return {"solution": sol, "lambda": lam, "emissions": sol.emissions(), "distance": sum(sol.depot_metrics(d)[0] for d in D)}
+    return {"solution": sol, "lambda": lam, "emissions": sol.emissions(),
+            "distance": sum(sol.depot_metrics(d)[0] for d in D),
+            "certified": certified, "certification_tests": tested}
 
 
 def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
@@ -431,6 +466,7 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
 
     B = dict(inst.depot_budget_allocation)  # tex appendix: initial B from expected reference emissions
     solutions: dict[int, Solution] = {w: None for w in demands}
+    certified_total = certification_tests = 0
     effective_outer_rounds = outer_rounds if (adapt_budget and price_guided) else 1
 
     for outer in range(effective_outer_rounds):
@@ -444,6 +480,8 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
             solutions[w] = result["solution"]
             E_by_scenario[w] = result["emissions"]
             total_distance += pi[w] * result["distance"]
+            certified_total += result.get("certified", 0)
+            certification_tests += result.get("certification_tests", 0)
 
         if not adapt_budget:
             break
@@ -471,6 +509,9 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
         "solutions": solutions,
         "emissions": E_by_scenario,
         "outer_rounds_used": outer + 1,
+        "certified_fraction": (certified_total / certification_tests
+                                if certification_tests else None),
+        "certification_tests": certification_tests,
     }
 
 
