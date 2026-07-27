@@ -1,65 +1,51 @@
-"""Reference emissions and the corporate carbon-budget parameterisation.
+"""Reference demand, the stock-budget parameterisation, and the fuel model.
 
-Reference emissions use the "deterministic home-depot angle-sweep
-construction under base demand" named in the "Carbon parameters and transfer
-network" paragraph of the appendix. The route-emission formula reproduces
-E_d^omega from the deterministic-equivalent formulation (tex, around
-eq. near "The load-dependent emission charged to depot d is..."):
+The module name is historical: it dates from the carbon version of this model
+and is kept only so that import paths stay stable. Nothing here is about
+carbon.
 
-    E = sum_over_arcs theta * d_ij * [rho0 * x_ij + (rhoQ - rho0)/Q * f_ij]
+Two distinct quantities live in this file.
 
-which for a single vehicle traversing a fixed sequence collapses to
-theta * distance * (rho0 + (rhoQ - rho0) * load_fraction) per arc.
+The *reference demand* R^0_d is the total base demand of the customers homed
+at depot d (tex, appendix "Stock parameters and transfer network"). It is the
+scale for the stock budget, the depot positioning bounds, and the transfer-arc
+capacities. It is read straight off the base demands, so it does not depend on
+any constructed or optimised solution.
 
-theta, rho0, rhoQ are left symbolic in the tex (no numeric value given);
-THETA/RHO_EMPTY/RHO_FULL below are ASSUMPTION constants, reused unchanged
-from the E5 public-benchmark adapter (gpt_test/build_cordeau_cbar_benchmark.py)
-so the two data sources share one illustrative emission calibration.
+The *load-dependent fuel* of a route is the pollution-routing form,
+
+    sum_over_arcs theta * d_ij * [rho0 * x_ij + (rhoQ - rho0)/Q * f_ij]
+
+which for one vehicle on a fixed sequence collapses to
+theta * distance * (rho0 + (rhoQ - rho0) * load_fraction) per arc. It is a
+cost component, not the allocated resource: the paper prices it at c^f and
+charges it in the objective, while the depot account is driven by demand
+assigned (tex, eq:c20).
+
+THETA IS NOT A FREE PARAMETER. The paper carries a single constant, the unit
+fuel cost c^f = 0.10 (build_data_release.EMISSION_COST), and folds the old
+fuel-to-emission conversion into it. The code still threads theta through
+route_metrics and the bounding routines, so the two agree only while theta is
+exactly 1. The assertion below enforces that, because a silent divergence here
+would make every reported cost disagree with the formulation in print.
 """
 from __future__ import annotations
-
-import math
 
 THETA = 1.0
 RHO_EMPTY = 0.9
 RHO_FULL = 1.5
 
-# tex, subsec:experimental_setup: "lower and upper responsibility bounds
+assert THETA == 1.0, (
+    "The paper has no theta: it carries one unit fuel cost c^f and folds the "
+    "conversion into it. Change EMISSION_COST in build_data_release.py "
+    "instead, or remove theta from route_metrics, diagonal_bound and "
+    "exact_model first."
+)
+
+# tex, subsec:experimental_setup: "lower and upper positioning bounds
 # equal to 45% and 160% of that allocation."
 BUDGET_LOWER_FRAC = 0.45
 BUDGET_UPPER_FRAC = 1.60
-
-
-def angle_sweep_routes(depot, members, capacity: float) -> list[list]:
-    if not members:
-        return []
-    ordered = sorted(members, key=lambda c: math.atan2(c.y - depot.y, c.x - depot.x))
-    routes, current, load = [], [], 0.0
-    for c in ordered:
-        if current and load + c.base_demand > capacity + 1e-9:
-            routes.append(current)
-            current, load = [], 0.0
-        current.append(c)
-        load += c.base_demand
-    if current:
-        routes.append(current)
-    return routes
-
-
-def route_emission(depot, route: list, capacity: float) -> float:
-    if not route:
-        return 0.0
-    remaining = sum(c.base_demand for c in route)
-    e = 0.0
-    px, py = depot.x, depot.y
-    for c in route:
-        factor = RHO_EMPTY + (RHO_FULL - RHO_EMPTY) * max(0.0, min(capacity, remaining)) / capacity
-        e += THETA * math.hypot(px - c.x, py - c.y) * factor
-        remaining -= c.base_demand
-        px, py = c.x, c.y
-    factor = RHO_EMPTY + (RHO_FULL - RHO_EMPTY) * max(0.0, min(capacity, remaining)) / capacity
-    e += THETA * math.hypot(px - depot.x, py - depot.y) * factor
-    return e
 
 
 def reference_demand_per_depot(depots, customers) -> dict:
@@ -76,7 +62,7 @@ def reference_demand_per_depot(depots, customers) -> dict:
 
 def corporate_stock(ref_by_depot: dict, gamma_B: float):
     """Total stock B^corp = gamma_B * (expected total demand), split across
-    depots in proportion to their expected home demand, with responsibility
+    depots in proportion to their expected home demand, with positioning
     bounds at 45% and 160% of that split. gamma_B is a service-cover factor:
     below one the network is short in expectation, above one it is long."""
     ref_total = sum(ref_by_depot.values())
