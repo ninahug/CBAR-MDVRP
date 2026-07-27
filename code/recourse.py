@@ -18,31 +18,49 @@ import pulp
 
 
 def solve_recourse_primal(g: dict[int, float], depots: list[int], transfer_arcs: list[dict],
-                           p_buy: float, p_sell: float):
-    prob = pulp.LpProblem("recourse_primal", pulp.LpMinimize)
-    arc_keys = [(a["from"], a["to"]) for a in transfer_arcs]
-    cap = {(a["from"], a["to"]): a["capacity"] for a in transfer_arcs}
-    kappa = {(a["from"], a["to"]): a["friction"] for a in transfer_arcs}
+                           p_buy: float, p_sell: float, canonical: bool = True,
+                           tol: float = 1e-7):
+    """Minimum-cost carbon-account recourse at deficit `g`.
 
-    t = {a: pulp.LpVariable(f"t_{a[0]}_{a[1]}", lowBound=0, upBound=cap[a]) for a in arc_keys}
-    b = {d: pulp.LpVariable(f"b_{d}", lowBound=0) for d in depots}
-    s = {d: pulp.LpVariable(f"s_{d}", lowBound=0) for d in depots}
+    A minimum-cost flow need not have a unique optimal solution: an optimal
+    flow may be augmented around a zero-reduced-cost cycle without changing
+    the cost. Reported internal-transfer volumes would then depend on which
+    optimum the solver happened to return. With canonical=True a second stage
+    holds the cost at its optimum and minimises total internal transfer over
+    that optimal face, which selects a well-defined representative and removes
+    gratuitous circulation while leaving Psi_Tbar(g) unchanged. This is the
+    rule the paper states in Section 5.2 and Appendix A.
+    """
+    def build():
+        prob = pulp.LpProblem("recourse_primal", pulp.LpMinimize)
+        arc_keys = [(a["from"], a["to"]) for a in transfer_arcs]
+        cap = {(a["from"], a["to"]): a["capacity"] for a in transfer_arcs}
+        kappa = {(a["from"], a["to"]): a["friction"] for a in transfer_arcs}
+        t = {a: pulp.LpVariable(f"t_{a[0]}_{a[1]}", lowBound=0, upBound=cap[a]) for a in arc_keys}
+        b = {d: pulp.LpVariable(f"b_{d}", lowBound=0) for d in depots}
+        s = {d: pulp.LpVariable(f"s_{d}", lowBound=0) for d in depots}
+        cost = (pulp.lpSum(kappa[a] * t[a] for a in arc_keys)
+                + p_buy * pulp.lpSum(b.values())
+                - p_sell * pulp.lpSum(s.values()))
+        for d in depots:
+            incoming = pulp.lpSum(t[a] for a in arc_keys if a[1] == d)
+            outgoing = pulp.lpSum(t[a] for a in arc_keys if a[0] == d)
+            prob += (b[d] + incoming - outgoing - s[d] == g[d]), f"balance_{d}"
+        return prob, t, b, s, arc_keys, cost
 
-    prob += (pulp.lpSum(kappa[a] * t[a] for a in arc_keys)
-             + p_buy * pulp.lpSum(b.values())
-             - p_sell * pulp.lpSum(s.values()))
-
-    balance_constraints = {}
-    for d in depots:
-        incoming = pulp.lpSum(t[a] for a in arc_keys if a[1] == d)
-        outgoing = pulp.lpSum(t[a] for a in arc_keys if a[0] == d)
-        con = (b[d] + incoming - outgoing - s[d] == g[d])
-        name = f"balance_{d}"
-        prob += con, name
-        balance_constraints[d] = name
-
+    prob, t, b, s, arc_keys, cost = build()
+    prob += cost
     status = prob.solve(pulp.PULP_CBC_CMD(msg=False))
     value = pulp.value(prob.objective)
+
+    if canonical and arc_keys and value is not None:
+        prob2, t2, b2, s2, arc_keys2, cost2 = build()
+        prob2 += pulp.lpSum(t2.values())
+        prob2 += (cost2 <= value + tol), "hold_optimal_cost"
+        status2 = prob2.solve(pulp.PULP_CBC_CMD(msg=False))
+        if pulp.LpStatus[status2] == "Optimal":
+            t, b, s = t2, b2, s2
+            status = status2
     return {
         "status": pulp.LpStatus[status],
         "value": value,

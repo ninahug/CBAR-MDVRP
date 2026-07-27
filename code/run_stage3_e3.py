@@ -13,13 +13,13 @@ prefixes of one 100-scenario bank -- see suite_config.build_e3_specs):
      re-adapting the budget) on held-out validation/test scenarios,
      reporting mean, standard error, and 95% CI.
 
-Wall-clock note: the frozen validation (200) and sealed test (800) banks are
-too large to re-solve in full within an interactive session (each held-out
-scenario needs its own routing re-solve). --eval-subsample caps how many
-scenarios from each bank are actually evaluated; this is a documented
-compute-driven simplification, not a protocol change -- the full banks
-remain on disk and nothing about the sealed test bank's contents is altered
-or peeked at before evaluation.
+Each held-out scenario requires its own routing re-solve at the fixed budget,
+so out-of-sample evaluation dominates the cost of this experiment. The banks
+were sized with that in mind (50 validation, 100 sealed test, 50 shift), and
+by default the full bank is evaluated, as the paper states. --eval-subsample
+caps the number of scenarios per bank for a quicker exploratory run; any value
+other than 0 departs from the reported protocol and should not be used for
+results that go into the paper.
 """
 from __future__ import annotations
 
@@ -76,8 +76,9 @@ def run_one(path: str, eval_subsample: int, alns_iterations: int, price_rounds: 
             ppbrc_result["emissions"], pi, D, inst.transfer_arcs, inst.prices,
             inst.depot_budget_bounds, inst.corporate_budget)
 
-        val_scenarios = inst.scenarios("validation")[:eval_subsample]
-        test_scenarios = inst.scenarios("test")[:eval_subsample]
+        limit = eval_subsample or None   # 0 means evaluate the whole bank
+        val_scenarios = inst.scenarios("validation")[:limit]
+        test_scenarios = inst.scenarios("test")[:limit]
         eval_iterations = max(15, alns_iterations // 4)
         val_eval = out_of_sample_eval(inst, B_star, val_scenarios, eval_iterations, 1, seed + 1)
         test_eval = out_of_sample_eval(inst, B_star, test_scenarios, eval_iterations, 1, seed + 2)
@@ -103,7 +104,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E3")
     ap.add_argument("--out", default=r"D:\CBAR_MDVRP\data\results\stage3_e3\stage3_e3_results.jsonl")
-    ap.add_argument("--eval-subsample", type=int, default=10)
+    ap.add_argument("--eval-subsample", type=int, default=0,
+                     help="0 evaluates the full validation and test banks, as reported; "
+                          "a positive value truncates them for exploratory runs")
     ap.add_argument("--alns-iterations", type=int, default=60)
     ap.add_argument("--price-rounds", type=int, default=2)
     ap.add_argument("--outer-rounds", type=int, default=2)

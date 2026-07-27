@@ -29,7 +29,16 @@ def close_enough(a: float, b: float, rel: float = 1e-6, abs_tol: float = 1e-6) -
 
 
 def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E1\e1_c10_d2_w3_g1.json"
+    if len(sys.argv) > 1:
+        path = sys.argv[1]
+    else:
+        # Smallest verification instance available, rather than a hard-coded
+        # name: the suite's sizes have been revised more than once.
+        import glob
+        candidates = sorted(glob.glob(r"D:\CBAR_MDVRP\data\generated\synthetic_v1\E1\*.json"))
+        if not candidates:
+            sys.exit("no verification instances found; run build_data_release.py first")
+        path = candidates[0]
     inst = load_instance(path)
     print(f"loaded {inst.suite}/{inst.name}: C={inst.n_customers} D={inst.n_depots} "
           f"vehicles={len(inst.vehicles)}")
