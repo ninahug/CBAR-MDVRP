@@ -183,15 +183,19 @@ eligibility, and a capacitated frictional transfer network, and show that
 route duration and depot emissions are determined by the combinatorial
 decisions alone.
 
-\item \textbf{Structure.} We characterise the carbon-recourse value function
-as a capacitated minimum-cost transshipment problem, derive its dual as an
-extended price polyhedron, and establish the resulting price bounds,
-path-friction bounds on cross-depot price differences, and complementarity
-conditions distinguishing unused, interior, and saturated transfer channels.
-We show that the value function is convex, piecewise linear and componentwise
-monotone in the deficit vector, and obtain an institutional ordering under
-which pooled accounts, a frictional transfer network, and independent depot
-accounts are ranked by cost.
+\item \textbf{Structure.} We show that, once routing fixes the emissions,
+what remains of the problem is a capacitated minimum-cost transshipment
+problem, and we read its standard duality theory as a statement about the
+firm. The dual variable of a depot's carbon account is the marginal cost of
+emission there; it is confined to the band between the external sale and
+purchase prices; two depots' prices cannot differ by more than the friction of
+the cheapest transfer path between them, and differ by exactly that much only
+when the path is saturated, in which case the excess is the congestion value
+of the capacity. The value function is convex, piecewise linear and monotone
+in the deficit, which ranks the pooled, network-constrained and independent
+regimes by cost and, less obviously, makes the first-stage allocation exactly
+optimisable once emissions are fixed. The mathematics is standard; what is new
+is the object it is applied to and the managerial reading it supports.
 
 \item \textbf{Method and evidence.} We develop a coordination method that
 alternates price-guided routing within each scenario at a fixed budget with an
@@ -907,13 +911,25 @@ Three institutional regimes are nested in \eqref{eq:two_stage_value_form}: indep
 \label{sec:carbon_recourse}
 \label{subsec:structural}
 
-This section isolates the accounting recourse that remains after a scenario
-routing plan has fixed the depot emissions.  The resulting value function is
-an exact component of the mixed-integer model, requires no convexification of
-the routing decisions, and provides the marginal carbon signals used by the
-subsequent solution method.  Convexity claims in this section concern the
-continuous recourse function for fixed routing emissions; they do not imply
-that the complete two-stage stochastic routing problem is convex.
+This section isolates the accounting recourse that remains once a scenario's
+routing plan has fixed the depot emissions. What remains is a linear
+programme, and the results below are the standard duality and convexity
+properties of such a programme, specialised to the transfer network of this
+model. Their interest is not technical but interpretive: they say what the
+dual variables of the carbon accounts \emph{mean} for the firm, and they
+identify the two facts the solution method depends on -- that the optimal
+prices bound the effect of a routing change, and that the value function is
+convex in the budget. Readers familiar with minimum-cost flow duality may
+read Propositions~\ref{prop:recourse_flow}--\ref{prop:complementarity} for
+the interpretation rather than for the argument.
+
+Two limits of scope should be stated at the outset. The convexity established
+here concerns the continuous recourse function at fixed routing emissions; it
+does not make the two-stage routing problem convex, and no result in this
+section bears on the difficulty of the routing decisions themselves. Nor is
+the price a valuation of a routing plan: it is exact for the accounts given
+the emissions, and its use in the search is justified in
+Section~\ref{sec:methodology} by an inequality, not by an equality.
 
 \subsection{The carbon-recourse value function}
 \label{subsec:recourse_value}
@@ -2294,13 +2310,30 @@ supply external spatial and capacity structure for the complete model and
 cannot be compared with the published best-known solutions, whose objective
 and information structure differ from ours.
 
+Three features of the study as a whole also bound what it can show. The
+benchmark methods are our own implementations rather than published codes,
+since no implementation of either exists for a problem with delegated carbon
+budgets and an internal transfer network. They share the routing engine,
+the emission evaluator and the recourse oracle with the proposed method, so
+the comparison isolates the coordination layer cleanly, but for the same
+reason it is a comparison of coordination schemes on a common substrate and
+not a comparison with the state of the art in vehicle routing. Second, the
+instances are of modest size -- at most 100 customers in the generated suites
+and 360 in the public ones -- because every candidate solution is evaluated
+against an exact recourse problem in every scenario; the results should not be
+read as evidence about instances an order of magnitude larger. Third, outside
+the verification suite no reported solution carries an optimality certificate,
+as the method produces no lower bound; comparisons at those sizes are relative
+to the other methods, not to the optimum.
+
 Taken together, the five experiments are intended to establish that the model
 is solved correctly, that the proposed coordination is worth its complexity,
 that modelling the allocation stochastically is worth its data requirements,
 and that the two recourse channels interact in a way that depends
 systematically on the operating environment. They are not intended to
 establish that the method dominates all alternatives, nor that the
-conclusions transfer to demand distributions outside those tested.
+conclusions transfer to demand distributions or instance sizes outside those
+tested.
 
 %%=====================================================================
 \section{Conclusion}
@@ -2368,8 +2401,12 @@ fixed. Mechanism-activation diagnostics are reported before any performance
 comparison, so that degenerate parameter regimes remain visible instead of
 being removed once results are known.
 
-The framework is limited to a single planning period, a finite scenario set,
-centralised decision making, and exogenous carbon prices. Multi-period
+Two kinds of limitation should be distinguished. The evidence is bounded in
+the ways set out in Section~\ref{subsec:claims_evidence}: benchmark methods
+implemented by us on a shared substrate, instances of moderate size, and no
+optimality certificate beyond the verification suite. The framework itself is
+limited to a single planning period, a finite scenario set, centralised
+decision making, and exogenous carbon prices. Multi-period
 banking and borrowing, endogenous incentives for depot managers,
 distributionally robust demand models, and decentralised depot behaviour are
 natural extensions. None is a minor addition: each changes the coordination
