@@ -38,7 +38,7 @@
 \begin{document}
 \begin{frontmatter}
 
-\title{Carbon-Budget Allocation and Recourse in Multi-Depot Vehicle
+\title{Inventory Allocation and Recourse in Multi-Depot Vehicle
 Routing under Demand Uncertainty}
 
 \author[label1]{Yang Zou}
@@ -58,41 +58,41 @@ Routing under Demand Uncertainty}
   addressline={Hung Hom, Kowloon}, city={Hong Kong}, country={China}}
 
 \begin{abstract}
-Firms that operate several depots increasingly delegate carbon budgets to
-those depots for responsibility accounting, and must do so before the demand
-of the coming operating cycle is known. Once demand is realised, some depot
-accounts are in deficit and others in surplus, and the firm may respond in two
-distinct ways: it may move service, by reassigning customers between depots
-and reconstructing routes, or it may move carbon responsibility, by
-transferring internal credits through an authorised depot-to-depot network and
-settling the residual externally. We formulate the resulting problem, the
-carbon-budget allocation and recourse multi-depot vehicle routing problem, as
-a two-stage stochastic programme in which the per-depot budget vector is the
-only non-anticipative decision, and give its deterministic-equivalent
-mixed-integer formulation with load-dependent emissions and single-commodity
-payload flow. For fixed stock draws, the stock-account component is a
-capacitated minimum-cost transshipment problem. Its dual is an extended price
-polyhedron whose depot prices are the marginal cost of emission at each depot,
-bounded by the external purchase and sale prices and separated by at most the
-friction of the internal transfer path, and whose capacity multipliers
-identify congested transfer channels. This structure yields exact marginal
-information for the continuous recourse while leaving the integer routing
-problem non-convex, and it implies an institutional ordering in which a
-frictionless pooled account is never more costly than a network of
-capacity-constrained transfers, which in turn is never more costly than
-independent depot accounts. We develop a coordination method that alternates
-price-guided scenario routing at a fixed allocation with an exact linear
-programme that re-optimises the budget at fixed scenario stock draws, and we
-report a computational study that compares it with exact solutions and with
-sample-average and progressive-hedging benchmarks, quantifies the value of
-allocating budgets stochastically rather than at expected demand, and
-identifies the operating conditions under which the two recourse channels
-complement rather than substitute for one another.
+A firm that serves customers from several depots must position stock across
+those depots before the demand of the coming cycle is known. Once demand is
+realised some depots hold too little and others too much, and the firm may
+respond in two ways: it may move \emph{demand}, by reassigning customers
+between depots and rebuilding the affected routes, or it may move \emph{goods},
+by transshipping stock over an authorised depot-to-depot network and settling
+the residual by emergency supply or salvage. The two channels are substitutes
+whose relative cost turns on the spatial structure of the depot network ---
+a dimension that inventory models without routing cannot see, and that
+inventory-routing models whose demand sits at the depots cannot express. We
+formulate the inventory allocation and recourse multi-depot vehicle routing
+problem as a two-stage stochastic programme in which the per-depot allocation
+is the only non-anticipative decision, and give its deterministic-equivalent
+mixed-integer formulation with load-dependent fuel cost and single-commodity
+payload flow. At fixed stock draws the rebalancing component is a capacitated
+minimum-cost transshipment problem whose dual is an extended price polyhedron:
+depot prices are the marginal cost of demand drawn at a depot, bounded by the
+salvage and emergency-supply prices and separated by at most the handling cost
+of the cheapest transfer path, while capacity multipliers identify congested
+channels. Because the stock a depot draws depends on the customer assignment
+alone and not on the visiting order, the priced routing subproblem is separable
+across customers, so a depot price acts directly as a per-customer incentive to
+reassign. We develop a coordination method that alternates price-guided
+scenario routing at a fixed allocation with an exact linear programme that
+re-optimises the allocation at fixed scenario stock draws, and report a
+computational study against exact solutions and against sample-average and
+progressive-hedging benchmarks that quantifies the value of allocating stock
+stochastically rather than at expected demand, and identifies the operating
+conditions under which the two recourse channels complement rather than
+substitute for one another.
 \end{abstract}
 
 \begin{keyword}
 Transportation \sep Multi-depot vehicle routing \sep Stochastic programming
-\sep Carbon budget allocation \sep Matheuristic
+\sep Lateral transshipment \sep Inventory allocation \sep Matheuristic
 \end{keyword}
 
 \end{frontmatter}
@@ -101,127 +101,128 @@ Transportation \sep Multi-depot vehicle routing \sep Stochastic programming
 \section{Introduction}
 \label{sec:introduction}
 
-Carbon performance has moved from an \emph{ex post} disclosure exercise to an
-\emph{ex ante} planning constraint. Delegating part of a corporate emission
-target to operating units is established practice rather than a modelling
-device: internal carbon pricing is now used by corporations worldwide
-\citep{cdp2021pricing}, and the arrangement has been studied as a control
-problem for the multidivisional firm \citep{desjardins2025internal}.
-Its best-documented implementation remains BP, which from 1998 allocated
-emission allowances to roughly 150 business units and permitted trade between
-them \citep{akhurst2003bp}. A distribution firm operating several depots
-under a corporate target likewise delegates that target to each depot, so that
-depot managers are evaluated against a budget rather than against distance or
-cost alone. The delegation is an accounting
-and control device: headquarters remains the legal counterparty in any
-external carbon market, but the internal allocation determines how the cost of
-compliance is attributed, and therefore how each depot behaves. Because the
-operating cycle must be planned before its demand is observed, the allocation
-is necessarily made under uncertainty.
+A distribution firm that serves customers from several depots must decide how
+much stock to place at each depot before it knows what the coming cycle will
+demand. Replenishment lead times are long relative to the cycle, so the
+position is binding: what a depot holds when orders arrive is what it was
+given. That a single pooled stock would be cheaper to hold is the oldest
+result in this area \citep{eppen1979centralization}; that firms nevertheless
+operate depots reflects the delivery cost that pooling would incur. The depot
+network is thus a compromise, and the allocation across it is made under
+uncertainty.
 
 This timing creates the problem studied here. Demand is realised after the
-budgets are fixed, so some depots exceed their allocation while others fall
-short of theirs, and the firm must reconcile the two. It has two very
-different instruments for doing so. It may move \emph{service}: reassign
-customers that lie between depots and rebuild the affected routes, which
-changes physical emissions. Or it may move \emph{responsibility}: transfer
-internal stock from a depot in surplus to a depot in deficit through
-an authorised channel, and settle whatever imbalance remains by purchasing or
-selling externally. The first instrument is operational and changes what the
-vehicles do; the second is financial and changes only who is charged. They are
-not interchangeable. Internal transfers are neither free nor unlimited, since
-approval, audit, and responsibility-adjustment rules restrict them, and
-external settlement is executed at a purchase price strictly above the sale
-price. A model that omits either instrument, or that lets credit move
-frictionlessly, removes the very trade-off that makes the allocation decision
-meaningful: if credits could be reshuffled at no cost after demand is
-observed, the first-stage allocation would be an accounting convention with no
-operational content.
+stock is placed, so some depots hold too little and others too much, and the
+firm must reconcile the two. It has two very different instruments. It may
+move \emph{demand}: reassign customers that lie between depots and rebuild the
+affected routes, so that a depot with stock to spare serves more of them. Or
+it may move \emph{goods}: transship stock from a depot in surplus to one in
+deficit over an authorised channel, and cover whatever imbalance remains by
+emergency supply or dispose of it by salvage. The first changes what the
+vehicles do and costs a routing detour; the second leaves the routes intact but
+costs handling and consumes a line-haul capacity that is finite within the
+cycle. They are substitutes, and which is cheaper is not settled by inventory
+reasoning alone: the detour depends on how far apart the depots are and on how
+many customers lie between them, whereas the transfer cost scales with how much
+the customer demands. A model that omits either instrument, or that lets stock
+move frictionlessly, removes the trade-off that makes the allocation decision
+meaningful: if stock could be reshuffled at no cost after demand is observed,
+the first-stage decision would be a bookkeeping convention with no operational
+content.
 
-Existing formulations do not capture this structure. Green vehicle routing and
-pollution-routing models establish that emissions depend on payload and
-sequence rather than distance alone \citep{bektas2011pollution,demir2012alns},
-but they treat carbon as an exogenous per-unit penalty and do not model an
-allowance that is allocated internally. Carbon-aware operations models
-represent cap-and-trade compliance at the level of the firm
-\citep{benjaafar2013carbon}, taking the emission total as the decision
-variable and leaving unmodelled both the routing decisions that generate it
-and the internal attribution of responsibility across facilities. Multi-depot
-routing supplies the spatial flexibility that makes reassignment possible
-\citep{cordeau1997vrp,montoyatorres2015literature}, but in its classical form
-customers are reassigned to reduce distance, not to relocate an emission
-liability. Stochastic vehicle routing provides the recourse machinery for
-demand realised after commitment \citep{gendreau1996stochastic,
-gendreau2016future}; there, however, the first-stage decision is typically a
-route plan or a fleet size, whereas here it is a vector of accounting
-entitlements whose second-stage value is determined by a market and a transfer
-network rather than by a failure-and-replenishment rule. The combination
-we study -- a non-anticipative per-depot carbon budget, two structurally
-different recourse channels, and a capacity-constrained internal transfer
-network -- has not, to our knowledge, been formulated.
+Each channel is well studied on its own, but not together in this setting.
+Lateral transshipment between stocking locations is a mature literature
+\citep{paterson2011lateral}, including the capacitated variants in which
+transfer capacity binds \citep{ozdemir2006capacitated}; there, however, demand
+is attached to the locations themselves and there is no routing, so serving a
+demand point from a different location is not an available action.
+\citet{rosales2013retailer} do compare a transshipment structure against
+central allocation --- the comparison our institutional ordering generalises
+--- but again without routing. Inventory-routing models combine stock and
+vehicles, and the closest of them adds transshipment and substitution under
+stochastic demand \citep{achamrah2022spare}; there the routes run from a
+central warehouse to depots whose own demand is random, so the depots
+\emph{are} the demand points and no reassignment channel can exist. That model
+also commits to routes first and adapts inventory to the scenario, which
+inverts the commitment structure studied here. Multi-depot routing supplies the
+reassignment flexibility \citep{cordeau1997vrp,montoyatorres2015literature},
+but in its classical deterministic form customers are reassigned to shorten
+routes, not to reach stock. Stochastic vehicle routing supplies the recourse
+machinery \citep{gendreau1996stochastic,gendreau2016future}, where the
+first-stage decision is typically a route plan or a fleet size rather than a
+stock position. What has not been formulated, to our knowledge, is the
+combination: an ex ante stock allocation whose two recourse channels are
+customer reassignment under last-mile routing and capacitated inter-depot
+transfer.
 
-Our starting point is a structural observation. Once a scenario's routes are
-fixed, the stock draws of every depot are determined, and what remains of the
-problem is purely an accounting question: how to cover the deficits from the
-surpluses at least cost. That residual problem is a capacitated minimum-cost
-transshipment problem on the depot network augmented by an external-market
-node. Its dual assigns to each depot a price with a direct managerial
-meaning -- the marginal cost of one more unit of emission at that depot --
-subject to two restrictions: no price may leave the band set by the external
-purchase and sale prices, and two depots' prices may not differ by more than
-the friction of the cheapest transfer path between them, unless that path is
-congested, in which case the congestion carries an explicit multiplier. These
-prices are exact local information about the recourse, and they are what a
-routing search needs in order to know whether moving a customer between two
-depots is worth its distance penalty. They do not, however, convexify the
-integer routing problem, and we are careful throughout to claim only the
-former.
+Our starting point is a structural observation. Once a scenario's customer
+assignments are fixed, the stock each depot draws is determined --- it is
+simply the demand assigned to it --- and what remains is a rebalancing
+question: how to cover the deficits from the surpluses at least cost. That
+residual problem is a capacitated minimum-cost transshipment problem on the
+depot network augmented by an external-settlement node. Its dual assigns each
+depot a price with a direct operational meaning, the marginal cost of one more
+unit of demand drawn there, subject to two restrictions: no price may leave the
+band set by the salvage and emergency-supply prices, and two depots' prices may
+not differ by more than the handling cost of the cheapest transfer path between
+them, unless that path is congested, in which case the congestion carries an
+explicit multiplier. Because the stock drawn depends on the assignment alone
+and not on the visiting order, the priced routing objective is separable across
+customers: a price difference appears as a per-customer incentive to reassign,
+worth that customer's demand times the gap between two eligible depots. This is
+exact local information about the recourse, and it is what a routing search
+needs in order to judge whether moving a customer is worth its detour. It does
+not convexify the integer routing problem, and we are careful throughout to
+claim only the former.
 
 The contributions of this paper are as follows.
 
 \begin{enumerate}
-\item \textbf{Model.} We formulate the carbon-budget allocation and recourse
+\item \textbf{Model.} We formulate the inventory allocation and recourse
 multi-depot vehicle routing problem as a two-stage stochastic programme in
-which the per-depot budget vector is the only non-anticipative decision, and
-in which operational and rebalancing recourse are represented explicitly and
-separately. We give its deterministic-equivalent mixed-integer formulation
-with load-dependent emissions, single-commodity payload flow, depot
-eligibility, and a capacitated frictional transfer network, and show that
-route duration and depot stock draws are determined by the combinatorial
-decisions alone.
+which the per-depot stock allocation is the only non-anticipative decision, and
+in which operational and inventory recourse are represented explicitly and
+separately. We give its deterministic-equivalent mixed-integer formulation with
+load-dependent fuel cost, single-commodity payload flow, depot eligibility, and
+a capacitated frictional transfer network. The claim is specific: not that
+allocation and transshipment have not been compared before, but that customer
+reassignment and inter-depot transfer have not been treated as parallel
+recourse channels under last-mile routing, which is the setting in which the
+choice between them depends on spatial structure.
 
-\item \textbf{Structure.} We show that, once routing fixes the stock draws,
-what remains of the problem is a capacitated minimum-cost transshipment
-problem, and we read its standard duality theory as a statement about the
-firm. The dual variable of a depot's stock account is the marginal cost of
-emission there; it is confined to the band between the external sale and
-purchase prices; two depots' prices cannot differ by more than the friction of
-the cheapest transfer path between them, and differ by exactly that much only
-when the path is saturated, in which case the excess is the congestion value
-of the capacity. The value function is convex, piecewise linear and monotone
-in the deficit, which ranks the pooled, network-constrained and independent
-regimes by cost and, less obviously, makes the first-stage allocation exactly
-optimisable once emissions are fixed. The mathematics is standard; what is new
-is the object it is applied to and the managerial reading it supports.
+\item \textbf{Structure.} We show that, once the assignment fixes the stock
+draws, what remains is a capacitated minimum-cost transshipment problem, and we
+read its duality theory as a statement about the firm. The dual variable of a
+depot's stock account is the marginal cost of demand drawn there; it lies
+between the salvage and emergency-supply prices; two depots' prices cannot
+differ by more than the handling cost of the cheapest transfer path, and differ
+by exactly that much only when the path is saturated, in which case the excess
+is the congestion value of the capacity. The value function is convex,
+piecewise linear and monotone in the deficit, which ranks the pooled,
+network-constrained and independent regimes by cost --- generalising to a
+routed setting a comparison established for pure inventory systems by
+\citet{rosales2013retailer} --- and makes the first-stage allocation exactly
+optimisable once the stock draws are fixed. The mathematics is standard; what
+is new is the object it is applied to and the operational reading it supports.
 
 \item \textbf{Method and evidence.} We develop a coordination method that
-alternates price-guided routing within each scenario at a fixed allocation with an
-exact linear programme that re-optimises the budget once scenario stock draws
-are fixed, the latter step being exact rather than heuristic because the
-recourse value is convex in the allocation for fixed emissions. We evaluate it
-against exact solutions on small instances and against sample-average
+alternates price-guided routing within each scenario at a fixed allocation with
+an exact linear programme that re-optimises the allocation once scenario stock
+draws are fixed, the latter step being exact rather than heuristic because the
+recourse value is convex in the allocation for fixed stock draws. We evaluate
+it against exact solutions on small instances and against sample-average
 \citep{kleywegt2002sample} and progressive-hedging
 \citep{rockafellar1991scenarios} benchmarks on larger ones, quantify the value
-of allocating budgets stochastically rather than at expected demand, and
-identify through a factorial design the conditions under which the two
-recourse channels complement or substitute for one another.
+of allocating stock stochastically rather than at expected demand, and identify
+through a factorial design the conditions under which the two recourse channels
+complement or substitute for one another.
 \end{enumerate}
 
 The remainder of the paper is organised as follows.
 Section~\ref{sec:literature_review} reviews the related literature.
 Section~\ref{sec:problem_formulation} presents the problem and its two-stage
 stochastic formulation, and Section~\ref{sec:rebalancing_recourse} develops the
-price-polyhedral structure of the carbon recourse.
+price-polyhedral structure of the rebalancing recourse.
 Section~\ref{sec:methodology} presents the solution method,
 Section~\ref{sec:computational_experiments} reports the computational study,
 and Section~\ref{sec:conclusion} concludes.
@@ -229,65 +230,18 @@ and Section~\ref{sec:conclusion} concludes.
 \section{Literature Review}
 \label{sec:literature_review}
 
-Three literatures bear on the problem studied here. Section~\ref{subsec:carbon_routing}
-reviews how carbon has been brought into routing and, separately, into
-operational models of regulatory compliance, and explains why an internally
-allocated budget is not the same object as an exogenous carbon price or a
-single firm-level cap. Section~\ref{subsec:multidepot} reviews multi-depot
-routing, the source of the spatial flexibility that this paper turns into a
-compliance instrument. Section~\ref{subsec:stochastic_routing} reviews
-routing under demand uncertainty and identifies what changes when the
-first-stage decision is an accounting entitlement rather than a physical
-commitment. Table~\ref{tab:literature_taxonomy} summarises the positioning.
+Three literatures bear on the problem studied here.
+Section~\ref{subsec:multidepot} reviews multi-depot routing, the source of the
+spatial flexibility that this paper turns into a rebalancing instrument.
+Section~\ref{subsec:inventory_transshipment} reviews inventory allocation and
+lateral transshipment, and explains why the models that compare those two
+structures cannot represent the third channel studied here.
+Section~\ref{subsec:stochastic_routing} reviews routing under demand
+uncertainty and identifies what changes when the first-stage decision is a
+stock position rather than a route.  Table~\ref{tab:literature_taxonomy}
+summarises the positioning.
 
-\subsection{Carbon in routing and in operational compliance models}
-\label{subsec:carbon_routing}
-
-Emission-aware routing begins from the observation that fuel burn, and hence
-carbon, is not proportional to distance. The pollution-routing problem of
-\citet{bektas2011pollution} makes fuel consumption an explicit function of
-payload and speed, so that the order in which customers are visited changes
-emissions even when route length does not. \citet{demir2012alns} develop an
-adaptive large neighbourhood search for the resulting non-linear evaluation,
-and the surveys of \citet{demir2014review} and \citet{lin2014survey} document
-how rapidly the resulting family of models has grown. A parallel branch
-constrains the vehicle technology rather than the driving profile:
-\citet{erdogan2012green} route alternative-fuel vehicles subject to driving
-range and refuelling stops. We adopt the load-dependent emission model of
-\citet{bektas2011pollution}, and the property it captures is what gives our
-setting its structure: because payload declines along a route, moving a
-customer between depots changes not only distance but the emission charged to
-each depot's account.
-
-What all of these models share is that carbon is priced exogenously, through
-a per-unit cost or a cap on total emissions, and that the price does not
-depend on which part of the organisation produced the emission. A separate
-literature in operations management models regulatory compliance itself.
-\citet{hua2011managing} introduce carbon trading into inventory decisions and
-show how the order quantity responds to the carbon price and the cap;
-\citet{chen2013carbon} characterise the carbon-constrained economic order
-quantity and identify conditions under which emissions can be reduced at
-small cost; \citet{benjaafar2013carbon} embed carbon constraints and trading
-into procurement, production, and inventory models and show that operational
-adjustment is frequently a cheaper compliance channel than technological
-investment; \citet{zakeri2015carbon} compare carbon pricing against a
-trading scheme at the supply-chain level and find that the two policies
-induce materially different operational responses.
-
-This literature works at the level of the firm. Its decision variable is an
-aggregate emission quantity, the physical decisions that generate the
-emissions are represented in reduced form, and the attribution of
-responsibility to individual facilities does not arise. The distinction
-matters here, because a single firm-level allowance and a vector of
-per-facility budgets induce different optimisation problems. Under one shared
-allowance only total emission is priced, and where it is produced is
-immaterial to the objective. Under delegated budgets the location of emission
-determines which account falls into deficit, and therefore whether a costly
-internal transfer or an external purchase is triggered. It is this
-localisation of carbon responsibility, together with the frictional channel
-that partially undoes it, that the present model adds.
-
-\subsection{Multi-depot routing and the value of reassignment}
+\subsection{Multi-depot routing and depot assignment flexibility}
 \label{subsec:multidepot}
 
 The multi-depot vehicle routing problem couples an assignment decision to a
@@ -304,15 +258,61 @@ test instances.
 
 In all of this work, reassigning a customer is motivated by distance, load
 balance, or fleet cost. In the problem studied here it acquires a second and
-economically distinct motive: reassignment moves emission from one carbon
-account to another, and is therefore a way of relieving a budget deficit
-without purchasing anything externally. The same spatial flexibility that the
-classical literature exploits for cost reduction becomes, under delegated
-carbon budgets, a compliance instrument. This is why the model must represent
-both the physical channel and the accounting channel explicitly rather than
-collapsing them: they relieve the same imbalance through different
-mechanisms and at different costs, and which one is preferable depends on
-the geometry of the instance and on the friction of the transfer network.
+economically distinct motive: reassignment moves demand onto a depot that has
+stock to spare, and is therefore a way of relieving a shortage without moving
+any goods. The same spatial flexibility that the classical literature exploits
+for cost reduction becomes, under an ex ante stock allocation, a rebalancing
+instrument. This is why the model must represent both channels explicitly
+rather than collapsing them: they relieve the same imbalance through different
+mechanisms and at different costs, and which is preferable depends on the
+geometry of the instance and on the handling cost of the transfer network.
+
+We also retain from the routing literature the load-dependent fuel model of
+\citet{bektas2011pollution}, in which consumption depends on payload and not on
+distance alone, so that the order in which customers are visited affects
+operating cost even when route length does not. It enters here as a cost
+component rather than as the allocated resource; \citet{demir2012alns} develop
+the adaptive large neighbourhood search we adopt for the resulting evaluation.
+
+\subsection{Inventory allocation and lateral transshipment}
+\label{subsec:inventory_transshipment}
+
+That consolidating stock reduces the safety stock a network must carry is
+classical \citep{eppen1979centralization}, and lateral transshipment is the
+standard way to recover part of that benefit without physically centralising:
+locations that are long ship to locations that are short once demand is known.
+\citet{paterson2011lateral} survey the field. Transfers are not free, and the
+capacitated variants are the ones relevant here: \citet{ozdemir2006capacitated}
+show that limited transportation capacity changes the structure of the optimal
+transshipment policy, so unrestricted transfer is not a neutral simplification.
+Much of this literature also studies decentralised systems in which locations
+set their own stock and bargain over transfer prices; we take the centralised
+case, in which the allocation is a decision variable rather than an equilibrium
+outcome.
+
+Closest to the present model in intent is \citet{rosales2013retailer}, who
+compare a network in which retailers transship among themselves once demand is
+realised against one in which a central depot allocates, and examine how each
+structure responds to demand variability. Our institutional ordering
+generalises that comparison to a routed setting. The limitation of this whole
+stream, for present purposes, is structural rather than incidental: the
+locations are the demand points. Serving a demand point costs nothing that
+depends on which location holds the stock, so the question of whether to move
+the goods or to move the demand cannot be posed.
+
+Inventory-routing models do carry vehicles alongside stock; \citet{archetti2014survey}
+survey the matheuristics used to solve them. The closest is
+\citet{achamrah2022spare}, who add lateral transshipment and product
+substitution to a stochastic inventory-routing problem: a central warehouse
+supplies depots whose demands are random, and shortages are met by transferring
+between depots or by substituting a compatible part. Two structural differences
+separate that model from ours. Its routes run at the replenishment echelon,
+from the warehouse to the depots, and the depots are themselves the demand
+points, so there are no customers to reassign and the channel this paper
+studies cannot arise. And its first-stage decision is the routing, with
+inventory levels, transfers and lost sales adjusted to the realised scenario;
+ours is the reverse, committing the stock and adapting the routes. The two
+models therefore place the burden of uncertainty on different decisions.
 
 \subsection{Routing under demand uncertainty}
 \label{subsec:stochastic_routing}
@@ -336,22 +336,22 @@ use both as benchmarks, and follow \citet{birge2011introduction} in reporting
 the value of the stochastic solution and the expected value of perfect
 information.
 
-Our first-stage decision differs from the one these formulations assume. It
-is not a physical commitment such as a route or a vehicle, but a vector of
-accounting entitlements, and its second-stage consequences are determined by
-a market and a transfer network rather than by a failure-and-replenishment
-rule. Two implications follow. First, the recourse contains a component that
-is independent of routing: once emissions are fixed, settling the accounts is
-a minimum-cost flow problem whose value function and duals can be computed
-exactly, which is what permits the budget to be re-optimised exactly rather
-than heuristically. Second, whether the first-stage decision is worth
-optimising under uncertainty at all becomes an empirical question rather than
-an assumption, and we report it against deterministic and simple managerial
+Our first-stage decision differs from the one these formulations assume. It is
+not a routing commitment but a stock position, and its second-stage
+consequences are determined by a transfer network and two external prices
+rather than by a failure-and-replenishment rule. Two implications follow.
+First, the recourse contains a component that is independent of routing: once
+the assignment fixes the stock draws, rebalancing the depots is a minimum-cost
+flow problem whose value function and duals can be computed exactly, which is
+what permits the allocation to be re-optimised exactly rather than
+heuristically. Second, whether the first-stage decision is worth optimising
+under uncertainty at all becomes an empirical question rather than an
+assumption, and we report it against deterministic and simple managerial
 allocation rules rather than presuming that the stochastic model dominates.
 
 On the algorithmic side, adaptive large neighbourhood search is the standard
 substrate for routing problems at this scale
-\citep{ropke2006adaptive,pisinger2007general}, including for emission-aware
+\citep{ropke2006adaptive,pisinger2007general}, including for load-dependent
 variants \citep{demir2012alns}, and we adopt it for the routing subproblem. Its
 operator selection is driven by search history and is therefore uninformed
 about the state of the stock accounts. Matheuristics that combine such a
@@ -378,30 +378,35 @@ improvement.
 \renewcommand{\arraystretch}{1.15}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
-Study & Multi-depot & Demand uncertainty & Carbon treatment & Responsibility unit & Internal transfer \\
+Study & Routing echelon & Demand uncertainty & Ex ante stock allocation & Customer reassignment & Inter-depot transfer \\
 \midrule
-\citet{bertsimas1992vehicle}   & No  & Yes & None             & ---   & --- \\
-\citet{renaud1996tabu}         & Yes & No  & None             & ---   & --- \\
-\citet{cordeau1997vrp}         & Yes & No  & None             & ---   & --- \\
-\citet{laporte2002integer}     & No  & Yes & None             & ---   & --- \\
-\citet{bektas2011pollution}    & No  & No  & Exogenous cost   & Firm  & --- \\
-\citet{hua2011managing}        & No  & No  & Cap-and-trade    & Firm  & No  \\
-\citet{demir2012alns}          & No  & No  & Exogenous cost   & Firm  & --- \\
-\citet{vidal2012hybrid}        & Yes & No  & None             & ---   & --- \\
-\citet{benjaafar2013carbon}    & No  & No  & Cap-and-trade    & Firm  & No  \\
-\citet{chen2013carbon}         & No  & No  & Cap / tax        & Firm  & No  \\
-\citet{zakeri2015carbon}       & No  & No  & Pricing vs.\ trading & Firm & No \\
-\textbf{This study}            & Yes & Yes & Delegated budget & Depot & Yes \\
+\citet{eppen1979centralization}   & None            & Yes & Yes & ---  & No  \\
+\citet{ozdemir2006capacitated}    & None            & Yes & Yes & ---  & Yes \\
+\citet{rosales2013retailer}       & None            & Yes & Yes & ---  & Yes \\
+\citet{achamrah2022spare}         & Replenishment   & Yes & No  & No   & Yes \\
+\citet{renaud1996tabu}            & Last mile       & No  & No  & Yes  & --- \\
+\citet{cordeau1997vrp}            & Last mile       & No  & No  & Yes  & --- \\
+\citet{vidal2012hybrid}           & Last mile       & No  & No  & Yes  & --- \\
+\citet{bektas2011pollution}       & Last mile       & No  & No  & No   & --- \\
+\citet{bertsimas1992vehicle}      & Last mile       & Yes & No  & No   & --- \\
+\citet{laporte2002integer}        & Last mile       & Yes & No  & No   & --- \\
+\textbf{This study}               & Last mile       & Yes & Yes & Yes  & Yes \\
 \bottomrule
 \end{tabular}
 
 \vspace{3pt}
 \begin{minipage}{0.95\textwidth}
-{\footnotesize \textit{Notes.} ``Responsibility unit'' is the entity against
-whose stock account emissions are charged. ``Internal transfer'' indicates
-whether the model permits carbon responsibility to be moved between
-responsibility units at a cost. A dash denotes that the attribute does not
-apply because the model contains no stock account.}
+{\footnotesize \textit{Notes.} ``Routing echelon'' distinguishes models whose
+vehicles run from a central facility to the stocking locations
+(replenishment) from those whose vehicles run from the stocking locations to
+customers (last mile). ``Ex ante stock allocation'' indicates whether the
+quantity held at each location is committed before demand is observed;
+\citet{achamrah2022spare} commit the routes instead and adjust inventory to the
+realised scenario. ``Customer reassignment'' indicates whether a demand point
+may be served by more than one location as a decision, and is marked ``---''
+where the model has no depot-to-customer routing, so that the question does not
+arise. ``Inter-depot transfer'' indicates whether stock may be moved between
+locations at a cost after demand is known.}
 \end{minipage}
 \end{table}
 
@@ -1429,7 +1434,7 @@ The formulation decomposes in two directions. Fixing $B$ removes the only
 variable common to the scenarios, so the second-stage problems separate and
 may be treated independently. Fixing the stock draws $U^\omega$ removes the
 combinatorial content, leaving a linear programme in the budget and the
-accounting variables. Neither restriction is a relaxation: each is an exact
+rebalancing variables. Neither restriction is a relaxation: each is an exact
 subproblem of the deterministic equivalent, and the method alternates between
 them.
 
@@ -1783,11 +1788,11 @@ them, and against benchmark methods otherwise.
 
 \paragraph{Computational considerations}
 
-The accounting components are small. For one scenario the recourse problem
+The rebalancing components are small. For one scenario the recourse problem
 has $|\mathcal D|$ balance constraints, $|\mathcal A^T|$ internal arcs and
 $2|\mathcal D|$ external-settlement arcs, and is a capacitated minimum-cost flow problem.
 The allocation problem has $|\mathcal D|$ shared variables and, per scenario,
-$|\mathcal A^T|+2|\mathcal D|$ accounting variables subject to
+$|\mathcal A^T|+2|\mathcal D|$ rebalancing variables subject to
 $|\mathcal D|$ balance constraints, so its size grows linearly in
 $|\mathcal W|(|\mathcal A^T|+|\mathcal D|)$. The computational effort is
 dominated by the routing search rather than by either linear programme.
@@ -2238,7 +2243,7 @@ establishes how that value depends on the operating environment.
 Each instance is solved under four regimes obtained by enabling or disabling
 the two channels.  Operational recourse is disabled by fixing every customer
 to its home depot; rebalancing recourse is disabled by setting all internal
-transfer capacities to zero.  External trading remains available throughout,
+transfer capacities to zero.  External settlement remains available throughout,
 so that complete recourse is preserved and the four regimes remain comparable.
 Let $Z_{ab}$ denote the expected cost, where $a$ and $b$ indicate whether
 operational and rebalancing recourse are available.  Define
@@ -2273,7 +2278,7 @@ interaction index and on the joint value of the two channels.
 The fully pooled regime is additionally reported as an institutional
 benchmark.  Its recourse cost is computed directly from
 \eqref{eq:pooled_recourse} rather than by assigning zero cost to a complete
-transfer network, so that it yields aggregate external trading and a common
+transfer network, so that it yields an aggregate external settlement and a common
 price without implying an arbitrary depot-to-depot transfer volume; see
 Remark~\ref{rem:canonical_pooling}.
 
@@ -2283,7 +2288,7 @@ Remark~\ref{rem:canonical_pooling}.
 \label{tab:e4_interaction}
 \begin{tabular}{ccrrrrr}
 \toprule
-Operational & Accounting & Mean cost & Cross-depot service (\%) & Internal transfer & External purchase & Price dispersion\\
+Operational & Rebalancing & Mean cost & Cross-depot service (\%) & Internal transfer & External purchase & Price dispersion\\
 \midrule
 No  & No  & & & & & \\
 Yes & No  & & & & & \\
@@ -2544,8 +2549,8 @@ Corollary~\ref{cor:institutional_nesting} prices the internal controls that
 restrict transfers: the difference between the networked and pooled values is
 the operating cost of those controls, which converts a governance question
 into a quantity the firm can measure. The same analysis identifies when
-delegation does not matter -- if depots are homogeneous, or if credits can be
-moved without friction, the allocation is cosmetic -- which is as useful to a
+the allocation does not matter -- if depots are homogeneous, or if stock can
+be moved without friction, the split is cosmetic -- which is as useful to a
 practitioner as the positive result.
 
 The computational study is organised so that each claim rests on evidence of
