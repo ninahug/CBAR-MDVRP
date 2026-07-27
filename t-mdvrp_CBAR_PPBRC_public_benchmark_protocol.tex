@@ -1395,6 +1395,18 @@ requires and could otherwise obtain only by re-solving a recourse problem for
 each candidate. The prices themselves are defined in
 Section~\ref{subsec:recourse_oracle}.
 
+The two subproblems are alternated, but not every scenario need be revisited
+at every pass. After the budget step moves $B$ to $B'$, the deficit of every
+scenario moves by the same vector $-(B'-B)$. If that perturbation satisfies
+the condition of Proposition~\ref{prop:certified_region} for scenario
+$\omega$, the optimal prices of that scenario are unchanged, so its routing
+subproblem \eqref{eq:priced_routing_subproblem} is the problem already solved,
+and searching it again re-solves an unchanged instance. Such scenarios are
+skipped and the effort is spent on the scenarios whose prices did move. The
+test costs one comparison per depot and requires no further solve, which is
+what makes it worth applying before each scenario rather than discovering the
+same fact by re-solving.
+
 Algorithm~\ref{alg:ppbrc} states the resulting procedure, and
 Figure~\ref{fig:ppbrc_flow} shows its structure.
 

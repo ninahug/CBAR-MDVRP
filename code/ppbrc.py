@@ -480,7 +480,7 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
               price_rounds: int = 3, alns_iterations: int = 200, seed: int = 0,
               price_guided: bool = True, adapt_budget: bool = True, diversify: bool = True,
               destroy_ops: list[str] | None = None, recombine_pool: bool = False,
-              recombine_time: float = 10.0) -> dict:
+              recombine_time: float = 10.0, lazy_rescan: bool = False) -> dict:
     """price_guided=False + adapt_budget=True (with only one outer round
     needed, since routing never responds to B) is Cost-only coordination.
     price_guided=True + adapt_budget=False is Price-guided-routing-only.
@@ -493,16 +493,31 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
     demands = {w: inst.scenario_demand(scenarios[w]) for w in range(len(scenarios))}
 
     B = dict(inst.depot_budget_allocation)  # tex appendix: initial B from expected reference emissions
+    prev_B = None
     solutions: dict[int, Solution] = {w: None for w in demands}
     certified_total = certification_tests = 0
     recomb_accepted = recomb_attempts = 0
     pools: dict[int, object] = {}
+    scenario_state: dict[int, tuple] = {}   # w -> (lambda, r) after its last solve
+    skipped_total = skip_tests = 0
+    reallocated = 0
     effective_outer_rounds = outer_rounds if (adapt_budget and price_guided) else 1
 
     for outer in range(effective_outer_rounds):
         E_by_scenario = {}
         total_distance = 0.0
         for w, demand in demands.items():
+            if lazy_rescan and outer > 0 and w in scenario_state and prev_B is not None:
+                lam_prev, r_prev = scenario_state[w]
+                dB = {d: -(B[d] - prev_B[d]) for d in D}
+                skip_tests += 1
+                if recourse.certify_same_region(lam_prev, r_prev, dB,
+                                                 inst.prices["buy"], inst.prices["sell"]):
+                    skipped_total += 1
+                    sol_w = solutions[w]
+                    E_by_scenario[w] = sol_w.emissions()
+                    total_distance += pi[w] * sum(sol_w.depot_metrics(d)[0] for d in D)
+                    continue
             result = solve_scenario(inst, demand, B, price_rounds=price_rounds,
                                      alns_iterations=alns_iterations, seed=seed + 7919 * w + outer,
                                      initial=solutions[w], price_guided=price_guided, diversify=diversify,
@@ -514,6 +529,8 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
             certified_total += result.get("certified", 0)
             certification_tests += result.get("certification_tests", 0)
             pools[w] = result.get("pool")
+            refit_w = refit_prices(inst, result["solution"], B)
+            scenario_state[w] = (refit_w["lambda"], refit_w["r"])
 
         if not adapt_budget:
             break
@@ -524,6 +541,7 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
             inst.depot_budget_bounds, inst.corporate_budget, per_scenario_B=False)
         new_B = master["B"]
         moved = sum(abs(new_B[d] - B[d]) for d in D)
+        prev_B = dict(B)
         B = new_B
         if moved < 1e-4 and outer > 0:
             break
@@ -575,6 +593,8 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
         "certification_tests": certification_tests,
         "recombined_accepted": recomb_accepted,
         "recombined_attempts": recomb_attempts,
+        "scenarios_skipped": skipped_total,
+        "skip_tests": skip_tests,
     }
 
 

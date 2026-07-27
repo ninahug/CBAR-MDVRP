@@ -17,7 +17,7 @@ def run_method(name: str, inst: Instance, scenarios: list[dict], seed: int,
         return ppbrc.run_ppbrc(inst, scenarios, outer_rounds=outer_rounds, price_rounds=price_rounds,
                                 alns_iterations=alns_iterations, seed=seed,
                                 price_guided=True, adapt_budget=True, diversify=True,
-                                recombine_pool=True)
+                                recombine_pool=True, lazy_rescan=True)
     if name == "PPBRC-no-recombination":
         # Full PPBRC with the final recombination switched off, so that the
         # paired difference against PPBRC measures that step alone.
