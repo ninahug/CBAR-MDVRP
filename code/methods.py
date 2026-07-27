@@ -16,7 +16,15 @@ def run_method(name: str, inst: Instance, scenarios: list[dict], seed: int,
     if name == "PPBRC":
         return ppbrc.run_ppbrc(inst, scenarios, outer_rounds=outer_rounds, price_rounds=price_rounds,
                                 alns_iterations=alns_iterations, seed=seed,
-                                price_guided=True, adapt_budget=True, diversify=True)
+                                price_guided=True, adapt_budget=True, diversify=True,
+                                recombine_pool=True)
+    if name == "PPBRC-no-recombination":
+        # Full PPBRC with the final recombination switched off, so that the
+        # paired difference against PPBRC measures that step alone.
+        return ppbrc.run_ppbrc(inst, scenarios, outer_rounds=outer_rounds, price_rounds=price_rounds,
+                                alns_iterations=alns_iterations, seed=seed,
+                                price_guided=True, adapt_budget=True, diversify=True,
+                                recombine_pool=False)
     if name == "PPBRC-core":
         return ppbrc.run_ppbrc(inst, scenarios, outer_rounds=outer_rounds, price_rounds=price_rounds,
                                 alns_iterations=alns_iterations, seed=seed,
@@ -38,7 +46,8 @@ def run_method(name: str, inst: Instance, scenarios: list[dict], seed: int,
     raise ValueError(f"unknown method {name!r}")
 
 
-ALL_METHODS = ["SAA-ALNS", "PH-ALNS", "Cost-only", "Price-guided-only", "PPBRC-core", "PPBRC"]
+ALL_METHODS = ["SAA-ALNS", "PH-ALNS", "Cost-only", "Price-guided-only",
+               "PPBRC-core", "PPBRC-no-recombination", "PPBRC"]
 FROZEN_SEEDS = [91001, 91002, 91003, 91004, 91005]
 
 

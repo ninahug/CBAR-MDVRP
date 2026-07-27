@@ -319,7 +319,8 @@ def _multi_start_initial(inst: Instance, demand: dict[int, float], lam: dict[int
 
 def alns_solve(inst: Instance, demand: dict[int, float], lam: dict[int, float],
                 iterations: int = 300, seed: int = 0, initial: Solution | None = None,
-                diversify: bool = True, destroy_ops: list[str] | None = None) -> Solution:
+                diversify: bool = True, destroy_ops: list[str] | None = None,
+                pool=None) -> Solution:
     """diversify=False drops the occasional large destroy and multi-start
     initial construction, giving a monotone single-trajectory search --
     used for PPBRC-core, vs. full PPBRC's "bounded post-stagnation
@@ -368,6 +369,12 @@ def alns_solve(inst: Instance, demand: dict[int, float], lam: dict[int, float],
             if trial_obj < best_obj:
                 best = trial.clone()
                 best_obj = trial_obj
+                if pool is not None:
+                    pool.add_solution(best)
+        if pool is not None and it % 10 == 0:
+            pool.add_solution(current)
+    if pool is not None:
+        pool.add_solution(best)
     return best
 
 
@@ -395,6 +402,18 @@ def refit_prices(inst: Instance, sol: Solution, B: dict[int, float]) -> dict:
     }
 
 
+def _exact_scenario_cost(inst: Instance, sol: Solution, B: dict[int, float]) -> float:
+    """Distance plus exact carbon-account recourse for one scenario. Used to
+    decide whether a recombined plan is genuinely better, rather than better
+    only under the linearisation."""
+    D = list(B.keys())
+    E = sol.emissions()
+    g = {d: E[d] - B[d] for d in D}
+    rec = recourse.solve_recourse_primal(g, D, inst.transfer_arcs,
+                                          inst.prices["buy"], inst.prices["sell"])["value"]
+    return sum(sol.depot_metrics(d)[0] for d in D) + rec
+
+
 def certified_exact(inst: Instance, lam: dict[int, float], r: dict[int, float],
                      E_before: dict[int, float], E_after: dict[int, float]) -> bool:
     """Whether Proposition 8 certifies that the price-linearised change in
@@ -407,7 +426,8 @@ def certified_exact(inst: Instance, lam: dict[int, float], r: dict[int, float],
 def solve_scenario(inst: Instance, demand: dict[int, float], B: dict[int, float],
                     price_rounds: int = 4, alns_iterations: int = 300, seed: int = 0,
                     initial: Solution | None = None, price_guided: bool = True,
-                    diversify: bool = True, destroy_ops: list[str] | None = None) -> dict:
+                    diversify: bool = True, destroy_ops: list[str] | None = None,
+                    recombine_pool: bool = False, recombine_time: float = 10.0) -> dict:
     """Layers 1+2 fixed-point for one scenario: alternate ALNS routing under
     the current price with a recourse-dual price refit, until stable or the
     round cap is hit. price_guided=False fixes lambda=0 for all rounds
@@ -426,9 +446,15 @@ def solve_scenario(inst: Instance, demand: dict[int, float], B: dict[int, float]
     last_lam = None
     prev_state = None          # (lambda, r, E) from the previous refit
     certified = tested = 0
+    pool = None
+    if recombine_pool:
+        import recombine as _recombine
+        pool = _recombine.RoutePool(inst, demand)
+
     for r in range(price_rounds):
         sol = alns_solve(inst, demand, lam, iterations=alns_iterations, seed=seed + 1000 * r, initial=sol,
-                          diversify=diversify, destroy_ops=destroy_ops)
+                          diversify=diversify, destroy_ops=destroy_ops, pool=pool)
+
         refit = refit_prices(inst, sol, B)
 
         if prev_state is not None:
@@ -446,13 +472,15 @@ def solve_scenario(inst: Instance, demand: dict[int, float], B: dict[int, float]
         last_lam = new_lam
     return {"solution": sol, "lambda": lam, "emissions": sol.emissions(),
             "distance": sum(sol.depot_metrics(d)[0] for d in D),
-            "certified": certified, "certification_tests": tested}
+            "certified": certified, "certification_tests": tested,
+            "pool": pool}
 
 
 def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
               price_rounds: int = 3, alns_iterations: int = 200, seed: int = 0,
               price_guided: bool = True, adapt_budget: bool = True, diversify: bool = True,
-              destroy_ops: list[str] | None = None) -> dict:
+              destroy_ops: list[str] | None = None, recombine_pool: bool = False,
+              recombine_time: float = 10.0) -> dict:
     """price_guided=False + adapt_budget=True (with only one outer round
     needed, since routing never responds to B) is Cost-only coordination.
     price_guided=True + adapt_budget=False is Price-guided-routing-only.
@@ -467,6 +495,8 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
     B = dict(inst.depot_budget_allocation)  # tex appendix: initial B from expected reference emissions
     solutions: dict[int, Solution] = {w: None for w in demands}
     certified_total = certification_tests = 0
+    recomb_accepted = recomb_attempts = 0
+    pools: dict[int, object] = {}
     effective_outer_rounds = outer_rounds if (adapt_budget and price_guided) else 1
 
     for outer in range(effective_outer_rounds):
@@ -476,12 +506,14 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
             result = solve_scenario(inst, demand, B, price_rounds=price_rounds,
                                      alns_iterations=alns_iterations, seed=seed + 7919 * w + outer,
                                      initial=solutions[w], price_guided=price_guided, diversify=diversify,
-                                     destroy_ops=destroy_ops)
+                                     destroy_ops=destroy_ops, recombine_pool=recombine_pool,
+                                     recombine_time=recombine_time)
             solutions[w] = result["solution"]
             E_by_scenario[w] = result["emissions"]
             total_distance += pi[w] * result["distance"]
             certified_total += result.get("certified", 0)
             certification_tests += result.get("certification_tests", 0)
+            pools[w] = result.get("pool")
 
         if not adapt_budget:
             break
@@ -496,10 +528,39 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
         if moved < 1e-4 and outer > 0:
             break
 
-    recourse_cost = sum(pi[w] * recourse.solve_recourse_primal(
-        {d: E_by_scenario[w][d] - B[d] for d in D}, D, inst.transfer_arcs,
-        inst.prices["buy"], inst.prices["sell"])["value"] for w in demands)
-    total_objective = total_distance + recourse_cost
+    def _objective(sols, budget):
+        E = {w: sols[w].emissions() for w in sols}
+        dist = sum(pi[w] * sum(sols[w].depot_metrics(d)[0] for d in D) for w in sols)
+        rec = sum(pi[w] * recourse.solve_recourse_primal(
+            {d: E[w][d] - budget[d] for d in D}, D, inst.transfer_arcs,
+            inst.prices["buy"], inst.prices["sell"])["value"] for w in sols)
+        return dist + rec, dist, rec, E
+
+    total_objective, total_distance, recourse_cost, E_by_scenario = _objective(solutions, B)
+
+    if recombine_pool and any(pools.get(w) for w in demands):
+        import recombine as _recombine
+        trial = dict(solutions)
+        for w, demand in demands.items():
+            pool = pools.get(w)
+            if not pool:
+                continue
+            recomb_attempts += 1
+            lam_w = refit_prices(inst, solutions[w], B)["lambda"]
+            cand = _recombine.recombine(inst, demand, pool, lam_w,
+                                         time_limit=recombine_time)
+            if cand is not None and not cand.unassigned:
+                trial[w] = cand
+        E_trial = {w: trial[w].emissions() for w in trial}
+        master_t = budget_master.solve_budget_master(
+            E_trial, pi, D, inst.transfer_arcs, inst.prices,
+            inst.depot_budget_bounds, inst.corporate_budget, per_scenario_B=False)
+        B_trial = master_t["B"]
+        obj_t, dist_t, rec_t, E_t = _objective(trial, B_trial)
+        if obj_t < total_objective - 1e-9:
+            recomb_accepted = sum(1 for w in trial if trial[w] is not solutions[w])
+            solutions, B = trial, B_trial
+            total_objective, total_distance, recourse_cost, E_by_scenario = obj_t, dist_t, rec_t, E_t
 
     return {
         "objective": total_objective,
@@ -512,6 +573,8 @@ def run_ppbrc(inst: Instance, scenarios: list[dict], outer_rounds: int = 5,
         "certified_fraction": (certified_total / certification_tests
                                 if certification_tests else None),
         "certification_tests": certification_tests,
+        "recombined_accepted": recomb_accepted,
+        "recombined_attempts": recomb_attempts,
     }
 
 

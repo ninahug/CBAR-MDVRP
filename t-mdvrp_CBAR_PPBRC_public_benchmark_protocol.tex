@@ -1398,7 +1398,33 @@ Section~\ref{subsec:recourse_oracle}.
 Algorithm~\ref{alg:ppbrc} states the resulting procedure, and
 Figure~\ref{fig:ppbrc_flow} shows its structure.
 
-An initial routing plan is obtained for each scenario by inserting customers at their cheapest feasible position, opening a vehicle when no such position exists. The initial budget is proportional to expected reference emissions and is projected onto $\mathcal B$. Two variants are distinguished. \emph{PPBRC-core} runs the scheme from a single deterministic construction and confines the neighbourhood search to small removals. \emph{PPBRC} constructs several initial plans and retains the best, and admits occasional large removals during the search. The distinction isolates the contribution of the coordination scheme from that of diversification, and both variants are reported separately in Section~\ref{sec:computational_experiments}.
+An initial routing plan is obtained for each scenario by inserting customers at their cheapest feasible position, opening a vehicle when no such position exists. The initial budget is proportional to expected reference emissions and is projected onto $\mathcal B$. Two variants are distinguished. \emph{PPBRC-core} runs the scheme from a single deterministic construction and confines the neighbourhood search to small removals. \emph{PPBRC} constructs several initial plans and retains the best, admits occasional large removals during the search, and closes with the recombination step described next. The distinction isolates the contribution of the coordination scheme from that of diversification, and both variants are reported separately in Section~\ref{sec:computational_experiments}.
+
+\paragraph{Recombination of pooled routes}
+At a fixed price the scenario objective \eqref{eq:priced_routing_subproblem}
+is a sum over routes: each contributes its own distance and its own emission,
+priced at the depot it is rooted in, and no term couples two routes. The best
+combination of any set of feasible routes is therefore the optimal solution of
+a set-partitioning problem, which covers every customer once and respects each
+depot's fleet. Neighbourhood search follows a single trajectory and can hold
+only one route per customer at a time; recombination is not so restricted, and
+may assemble a plan from routes discovered at different points of the search
+and rooted at different depots, which is where cross-depot reassignment is
+decided. The routes encountered during the search are therefore retained, and
+the set-partitioning problem over that pool is solved once for each scenario.
+
+Two features of the step matter. It is applied after the coordination loop has
+terminated, not within it. Applied within, it replaces the incumbent by a plan
+that is optimal over the pool but is a poor starting point for the next round
+of search, and in our experiments the trajectory then ended at a worse
+solution than without it; applied at the end, nothing follows that the choice
+could disturb. And the recombined plan is adopted only if the complete
+objective, with the budget re-optimised and the recourse evaluated exactly,
+strictly improves. The step can therefore leave the solution unchanged but
+cannot worsen it. By Proposition~\ref{prop:certified_region}, where the
+recombined emissions satisfy the certificate the set-partitioning optimum is
+optimal for the exact objective over the pool, and not merely for the
+linearisation.
 
 \begin{algorithm}[!htbp]
 \caption{Price-Polyhedral Budget--Routing Coordination (PPBRC)}
@@ -1901,7 +1927,8 @@ the complete method.
 \item \textbf{Cost-only coordination.} The proposed block architecture with depot prices and congestion multipliers removed.
 \item \textbf{Price-guided routing only.} The price-polyhedral routing subproblem with the first-stage budget held at its initial value.
 \item \textbf{PPBRC-core.} The single-trajectory price-polyhedral routing and exact budget-coordination scheme, without diversification.
-\item \textbf{PPBRC.} PPBRC-core followed by bounded post-stagnation destroy--repair diversification and a final price-polyhedral refinement.
+\item \textbf{PPBRC without recombination.} Complete PPBRC with the final set-partitioning step switched off.
+\item \textbf{PPBRC.} PPBRC-core followed by bounded destroy--repair diversification and a final recombination of the pooled routes.
 \end{enumerate}
 
 Equal-allocation, expected-demand, and reference-emission budget rules are
@@ -1991,7 +2018,9 @@ whole.  The external comparison is complete PPBRC against SAA-ALNS and
 PH-ALNS.  The internal attribution uses the three restricted variants defined
 in Section~\ref{subsubsec:algorithms_compared}: Cost-only coordination removes
 the depot price signal, Price-guided routing only removes budget
-re-optimisation, and PPBRC-core removes the diversification phase.  Comparing
+re-optimisation, PPBRC-core removes the diversification phase, and a fourth
+variant removes only the final recombination, so that the paired difference
+against complete PPBRC measures that step alone.  Comparing
 these against the complete method separates the contribution of price-guided
 routing, of exact budget coordination, and of post-stagnation diversification.
 
@@ -2041,6 +2070,7 @@ Variant & Mean objective & Std. & Difference vs.\ PPBRC (\%) & Wins/ties/losses 
 Cost-only coordination     & & & & & & \\
 Price-guided routing only  & & & & & & \\
 PPBRC-core                 & & & & & & \\
+PPBRC without recombination & & & & & & \\
 PPBRC                      & & & & & & \\
 \bottomrule
 \end{tabular}}
