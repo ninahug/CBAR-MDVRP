@@ -102,10 +102,17 @@ Transportation \sep Multi-depot vehicle routing \sep Stochastic programming
 \label{sec:introduction}
 
 Carbon performance has moved from an \emph{ex post} disclosure exercise to an
-\emph{ex ante} planning constraint. A distribution firm operating several
-depots under a corporate emission target increasingly delegates part of that
-target to each depot, so that depot managers are evaluated against a budget
-rather than against distance or cost alone. The delegation is an accounting
+\emph{ex ante} planning constraint. Delegating part of a corporate emission
+target to operating units is established practice rather than a modelling
+device: by 2023 more than 1{,}700 firms reported an internal carbon price to
+the Carbon Disclosure Project, and the arrangement has been studied as a
+control problem for the multidivisional firm \citep{desjardins2025internal}.
+Its best-documented implementation remains BP, which from 1998 allocated
+emission allowances to roughly 150 business units and permitted trade between
+them \citep{akhurst2003bp}. A distribution firm operating several depots
+under a corporate target likewise delegates that target to each depot, so that
+depot managers are evaluated against a budget rather than against distance or
+cost alone. The delegation is an accounting
 and control device: headquarters remains the legal counterparty in any
 external carbon market, but the internal allocation determines how the cost of
 compliance is attributed, and therefore how each depot behaves. Because the
@@ -478,8 +485,14 @@ revisable, the first-stage decision would carry no operational content.
 \item \textbf{Restricted internal transfer.} Carbon responsibility moves
 between depots only along authorised arcs, at a directional friction cost and
 subject to a capacity limit, representing approval, audit and internal-control
-requirements. A frictionless uncapacitated network is retained only as an
-institutional regime.
+requirements. This restriction is what the evidence on intra-firm trading
+describes. Reviewing BP's system, \citet{victor2006bp} report that it did not
+operate as a textbook cap-and-trade market: no money changed hands on internal
+trades, the trading was mediated by corporate rather than settled between
+units, and the volumes were administratively bounded. An internal carbon
+market is therefore better represented as a constrained transfer network than
+as an unrestricted exchange, and the frictionless uncapacitated case is
+retained here only as a limiting institutional regime.
 
 \item \textbf{Exogenous carbon prices with a positive spread.} External
 purchase and sale prices are exogenous, constant across scenarios, and satisfy
