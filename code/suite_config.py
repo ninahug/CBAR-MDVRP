@@ -28,7 +28,7 @@ DEFAULT_DEMAND_CV_COMMON = 0.25   # ASSUMPTION baseline depot-common cv (matches
 DEFAULT_DEMAND_CV_IDIO = 0.10     # ASSUMPTION baseline idiosyncratic cv (matches E5b)
 DEFAULT_CROSS_DEPOT_CORR = 0.25   # ASSUMPTION baseline equicorrelation (matches E5b)
 DEFAULT_BOUNDARY_SHARE = 0.20     # ASSUMPTION baseline boundary-customer share
-DEFAULT_BUDGET_FACTOR = 1.00
+DEFAULT_BUDGET_FACTOR = 0.75   # see COMPARISON_STRATA for why not 1.00
 DEFAULT_CAPACITY_SCALE = 1.00
 
 # Shared size grid used by the tuning, comparison, and stochastic-value
@@ -56,10 +56,17 @@ VERIFICATION_SCENARIOS = [2, 3, 4, 5, 6]
 # overlay freezes explicitly (budget factors {0.90,1.00,1.10}, capacity
 # scales {0.60,1.00,1.40}), paired monotonically so "tight" means both
 # scarce budget and scarce transfer capacity.
+# Budget factors are relative to the angle-sweep reference, which is a
+# business-as-usual routing rather than an optimised one. Cost minimisation
+# alone already reaches about 0.75 of it (measured: 0.59 to 0.87 across the
+# sensitivity suite), so a factor near 1.00 is met without any abatement and
+# leaves the carbon accounts inactive in every scenario. The strata straddle
+# that level: the tight stratum sets a target cost minimisation cannot reach
+# unaided, the loose one a target it already satisfies.
 COMPARISON_STRATA = [
-    ("tight_low_capacity", 0.90, 0.60),
-    ("balanced", 1.00, 1.00),
-    ("loose_high_capacity", 1.10, 1.40),
+    ("tight_low_capacity", 0.65, 0.60),
+    ("balanced", 0.75, 1.00),
+    ("loose_high_capacity", 0.85, 1.40),
 ]
 
 # Sensitivity suite: the 2^4 factor levels are stated explicitly in the tex.
