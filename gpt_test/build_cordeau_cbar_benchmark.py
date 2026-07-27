@@ -20,6 +20,7 @@ import math
 import os
 import random
 import re
+import tempfile
 import shutil
 import urllib.request
 import zipfile
@@ -36,7 +37,8 @@ SELECTED_E5B = ["p01", "p02", "p03", "p12", "p04", "p05", "p06", "p07", "p15", "
 # network to its mean requirement. See suite_config.py.
 BUDGET_FACTORS = [0.90, 1.00, 1.10]
 CAPACITY_SCALES = [0.60, 1.00, 1.40]
-P_BUY, P_SELL = 9.0, 2.0
+P_BUY, P_SELL = 2.0, 0.5
+EMISSION_COST = 0.1  # load-dependent fuel priced as operating cost
 TRAIN_N, VALID_N, TEST_N = 50, 200, 800
 STREAM_BASE = {"train": 12_000_000, "validation": 13_000_000, "test": 14_000_000}
 
@@ -179,16 +181,20 @@ def bks_reference_emission(inst: CordeauInstance, routes: list[tuple[int, list[i
     return sum(route_emission(inst, d, r, demands) for d, r in routes)
 
 
-def per_depot_reference_emission(inst: CordeauInstance, routes: list[tuple[int, list[int]]]) -> dict[int, float]:
-    """Per-depot breakdown of the reference emission (1-based depot index),
-    used so transfer-arc capacity can scale with each arc's own two
-    incident depots rather than an aggregate figure split evenly across all
-    arcs -- matching the synthetic-suite generator's convention
-    (code/network.py: capacity = capacity_scale * mean(E0[a], E0[b]))."""
-    demands = {n.node_id: n.demand for n in inst.customers}
+def per_depot_reference_demand(inst: CordeauInstance) -> dict[int, float]:
+    """Base demand homed at each depot (1-based depot index).
+
+    The synthetic generator sets a customer's home depot explicitly and sums
+    base demand over it (code/carbon.py: reference_demand_per_depot). Cordeau
+    instances carry no home-depot field, so the nearest depot plays that role,
+    which is the same rule the generator's core-customer sampling follows.
+    This depends only on published coordinates and demands, so unlike the old
+    emission reference it never depends on a solution file.
+    """
     per_depot: dict[int, float] = {d: 0.0 for d in range(1, inst.n_depots + 1)}
-    for d, r in routes:
-        per_depot[d] = per_depot.get(d, 0.0) + route_emission(inst, d, r, demands)
+    for c in inst.customers:
+        d = min(range(1, inst.n_depots + 1), key=lambda j: euclid(c, inst.depots[j - 1]))
+        per_depot[d] += c.demand
     return per_depot
 
 
@@ -327,7 +333,10 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
         else:
             routes, ref_e = nearest_depot_reference(inst)
         graph = mst_plus_nearest(inst)
-        per_depot_e0 = per_depot_reference_emission(inst, routes)
+        # The routes above are retained only as provenance for E5a and for the
+        # published-distance column; the E5b reference no longer reads them.
+        per_depot_r0 = per_depot_reference_demand(inst)
+        ref_r = sum(per_depot_r0.values())
 
         # Geometry, eligibility, and scenario draws do not depend on
         # (budget_factor, capacity_scale); computing and storing them once
@@ -344,8 +353,10 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
             "retained_public_data": asdict(inst),
             "eligibility": "all public depots",
             "emission_parameters": {"theta": 1.0, "rho_empty": 0.9, "rho_full": 1.5},
+            "emission_cost": EMISSION_COST,
             "reference_emission": ref_e,
-            "reference_emission_per_depot": {str(k): v for k, v in per_depot_e0.items()},
+            "reference_demand": ref_r,
+            "reference_demand_per_depot": {str(k): v for k, v in per_depot_r0.items()},
             "prices": {"buy": P_BUY, "sell": P_SELL},
             "scenario_seeds": {
                 "train": STREAM_BASE["train"] + idx,
@@ -362,20 +373,20 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
         write_json(base_path, base)
         manifest_rows.append({"experiment": "E5b", "instance": name, "variant": "base", "file": str(base_path.relative_to(out)), "sha256": sha256(base_path), "reference_route": ref_type})
 
-        e0_total = sum(per_depot_e0.values())
+        r0_total = ref_r
         for gamma in BUDGET_FACTORS:
             for tau in CAPACITY_SCALES:
                 arcs = [
-                    dict(a, capacity=tau * 0.5 * (per_depot_e0.get(a["from"], 0.0) + per_depot_e0.get(a["to"], 0.0)))
+                    dict(a, capacity=tau * 0.5 * (per_depot_r0.get(a["from"], 0.0) + per_depot_r0.get(a["to"], 0.0)))
                     for a in graph
                 ]
                 variant = f"g{gamma:.2f}_t{tau:.2f}".replace(".", "p")
-                corp_budget = gamma * ref_e
+                corp_budget = gamma * ref_r
                 # Same 45%/160%-of-proportional-allocation rule as the
                 # synthetic suites (code/carbon.py, subsec:experimental_setup)
                 # -- E5b's own paragraph doesn't restate it, but nothing in
                 # it overrides the general budget parameterisation either.
-                alloc = {d: corp_budget * e / e0_total for d, e in per_depot_e0.items()} if e0_total > 0 else {}
+                alloc = {d: corp_budget * r / r0_total for d, r in per_depot_r0.items()} if r0_total > 0 else {}
                 bounds = {str(d): [0.45 * a, 1.60 * a] for d, a in alloc.items()}
                 overlay = {
                     "benchmark_version": "CBAR-MDVRP-PUBLIC-v1.0",
@@ -413,10 +424,10 @@ def smoke_test() -> None:
 5 0 0 0 0 0 0
 6 10 10 0 0 0 0
 """
-    tmp = Path("/tmp/cordeau_adapter_fixture")
-    tmp.mkdir(exist_ok=True)
-    p = tmp / "p99"; p.write_text(fixture)
-    inst = parse_cordeau_instance(p)
+    # tempfile rather than a hardcoded /tmp, which does not exist on Windows.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        p = Path(tmpdir) / "p99"; p.write_text(fixture)
+        inst = parse_cordeau_instance(p)
     assert inst.n_customers == 4 and inst.n_depots == 2 and inst.max_vehicles == 2
     s = correlated_scenarios(inst, 5, 123)
     assert len(s) == 5 and abs(sum(x["probability"] for x in s) - 1) < 1e-12
@@ -424,7 +435,13 @@ def smoke_test() -> None:
     assert len(arcs) == 2
     routes, e = nearest_depot_reference(inst)
     assert routes and e > 0
-    print(json.dumps({"status": "PASS", "customers": 4, "depots": 2, "scenarios": 5, "arcs": len(arcs), "reference_emission": e}, indent=2))
+    # Two customers sit beside each depot, each demanding 2, so the reference
+    # demand must split 4/4 and total 8.
+    r0 = per_depot_reference_demand(inst)
+    assert r0 == {1: 4.0, 2: 4.0}, r0
+    print(json.dumps({"status": "PASS", "customers": 4, "depots": 2, "scenarios": 5,
+                      "arcs": len(arcs), "reference_emission": e,
+                      "reference_demand_per_depot": r0}, indent=2))
 
 
 def main() -> None:

@@ -96,7 +96,7 @@ class PseudoCbarInstance(PseudoInstance):
         self.suite = "E5b"
         # gpt_test/build_cordeau_cbar_benchmark.py indexes depots 1-based
         # (Cordeau's own convention, inherited from parse_solution_routes /
-        # per_depot_reference_emission); PseudoInstance.depots is 0-based
+        # per_depot_reference_demand); PseudoInstance.depots is 0-based
         # ("idx" starts at 0). Remap every depot-keyed field from the
         # overlay/base to 0-based here so run_ppbrc's D = [d["idx"] ...]
         # actually matches these dicts' keys instead of KeyError-ing.
@@ -105,6 +105,13 @@ class PseudoCbarInstance(PseudoInstance):
         ]
         self.prices = base["prices"]
         self.theta = base["emission_parameters"]["theta"]
+        # Without this the E5b runs would price fuel at zero while every
+        # synthetic suite prices it at 0.1 (ppbrc reads it via getattr with a
+        # 0.0 default, so the omission was silent).
+        self.emission_cost = base.get("emission_cost", 0.0)
+        self.reference_demand = {
+            int(k) - 1: v for k, v in base.get("reference_demand_per_depot", {}).items()
+        }
         self.corporate_budget = overlay["corporate_budget"]
         self.depot_budget_allocation = {int(k) - 1: v for k, v in overlay["depot_budget_allocation"].items()}
         self.depot_budget_bounds = {int(k) - 1: tuple(v) for k, v in overlay["depot_budget_bounds"].items()}
