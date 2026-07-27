@@ -37,6 +37,11 @@ SELECTED_E5B = ["p01", "p02", "p03", "p12", "p04", "p05", "p06", "p07", "p15", "
 # network to its mean requirement. See suite_config.py.
 BUDGET_FACTORS = [0.90, 1.00, 1.10]
 CAPACITY_SCALES = [0.60, 1.00, 1.40]
+# Transfer capacity scales against the *imbalance* that crosses the network,
+# not against the demand level; see code/network.py:CAPACITY_FRAC for the
+# measurement that fixes this fraction. Scaling to R^0 directly left every
+# arc slack in every scenario, which made the tau factor inert.
+CAPACITY_FRAC = 0.12
 P_BUY, P_SELL = 2.0, 0.5
 EMISSION_COST = 0.1  # load-dependent fuel priced as operating cost
 TRAIN_N, VALID_N, TEST_N = 50, 200, 800
@@ -377,7 +382,7 @@ def build(instances_root: Path, solutions_root: Path | None, out: Path) -> None:
         for gamma in BUDGET_FACTORS:
             for tau in CAPACITY_SCALES:
                 arcs = [
-                    dict(a, capacity=tau * 0.5 * (per_depot_r0.get(a["from"], 0.0) + per_depot_r0.get(a["to"], 0.0)))
+                    dict(a, capacity=tau * CAPACITY_FRAC * 0.5 * (per_depot_r0.get(a["from"], 0.0) + per_depot_r0.get(a["to"], 0.0)))
                     for a in graph
                 ]
                 variant = f"g{gamma:.2f}_t{tau:.2f}".replace(".", "p")

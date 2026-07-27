@@ -1866,12 +1866,32 @@ The corporate budget is parameterised as
  B^{\mathrm{corp}}=\gamma_B R^0,
  \label{eq:budget_stringency}
 \end{equation}
-where $R^0=\sum_{d\in\mathcal D}R^0_d$ and $R^0_d$ is the total base demand of the customers homed at depot $d$, so $\gamma_B=1$ stocks the network to its expected total requirement.  The reference allocation is proportional to $R^0_d$, with lower and upper positioning bounds equal to $45\%$ and $160\%$ of that allocation.  The transfer graph is a bidirectional ring; the five-depot classes include two additional bidirectional chords.  Arc handling costs are directionally asymmetric, and capacities are scaled relative to the reference demand of their incident depots.
+where $R^0=\sum_{d\in\mathcal D}R^0_d$ and $R^0_d$ is the total base demand of the customers homed at depot $d$, so $\gamma_B=1$ stocks the network to its expected total requirement.  The reference allocation is proportional to $R^0_d$, with lower and upper positioning bounds equal to $45\%$ and $160\%$ of that allocation.  The transfer graph is a bidirectional ring; the five-depot classes include two additional bidirectional chords.  Arc handling costs are directionally asymmetric.  Arc capacity is $\tau\cdot\zeta\cdot\tfrac12(R^0_d+R^0_{d'})$ with $\zeta=0.12$: capacity must be scaled against the quantity that actually crosses the network, which is the imbalance rather than the demand level, and $\zeta$ is set so that $\tau=1$ places capacity at roughly the median transferable imbalance.  Section~\ref{subsubsec:parameter_settings} reports the measurement behind it.
 
 \subsubsection{Parameter settings}
 \label{subsubsec:parameter_settings}
 
 Table~\ref{tab:parameter_values} lists the value of every parameter of the instance generator and of the stock-account layer.  Values are held at these settings throughout, except for the factors that a given experiment deliberately varies: the budget factor $\gamma_B$ and transfer-capacity scale $\tau$ define the three network strata of the comparison suite, and the four factors of the sensitivity suite take the two levels listed in the final block.
+
+One of these values is set by measurement rather than by convention, and the
+reason is worth stating because it determines whether an experimental factor is
+informative at all.  A transfer arc's capacity has to be scaled against the
+quantity that crosses it, and that quantity is the imbalance between depots,
+not the demand level.  The reference demand $R^0_d$ is a depot's entire
+expected requirement, whereas the volume needing transfer is the deviation of
+realised demand from that requirement, netted against the opposite deviations
+elsewhere.  Over the comparison and sensitivity suites the transferable
+imbalance averages $11$--$12\%$ of the mean reference demand of an arc's two
+depots and never exceeds $62\%$.  Setting $\overline T_{dd'}$ proportional to
+$R^0$ directly would therefore leave every arc slack in every scenario of every
+suite, so that $\tau$ would vary nothing: the factorial design would report a
+null effect for the transfer-capacity factor that was an artefact of the
+calibration rather than a finding, and the capacity multipliers of
+Proposition~\ref{prop:complementarity} would never become positive.  The factor
+$\zeta=0.12$ places $\tau=1.00$ at approximately the median imbalance, so that
+$\tau=0.60$ is genuinely restrictive and $\tau=1.40$ genuinely slack.  It is
+fixed from the instance generator alone, before any solution is computed, and
+is not revised after performance is observed.
 
 \begin{table}[!htbp]
 \centering
@@ -1913,7 +1933,8 @@ $p^{\mathrm{buy}},p^{\mathrm{sell}}$ & Emergency-supply and salvage prices & $2.
 \multicolumn{3}{@{}l}{\textit{Inter-depot transfer network}}\\
 $\mathcal A^T$ & Topology & bidirectional ring ($+2$ chords when $|\mathcal D|=5$) \\
 $\kappa_{dd'}$ & Arc handling cost & $(0.15+0.35\,\tilde d_{dd'})(1\pm0.15)$, $\tilde d$ normalised depot distance \\
-$\overline T_{dd'}$ & Arc capacity & $\tau\cdot\tfrac12(R^0_d+R^0_{d'})$ \\
+$\overline T_{dd'}$ & Arc capacity & $\tau\cdot\zeta\cdot\tfrac12(R^0_d+R^0_{d'})$ \\
+$\zeta$ & Imbalance fraction fixing the capacity scale & $0.12$ \\
 $\tau$ & Transfer-capacity scale & $1.00$ (baseline) \\
 \midrule
 \multicolumn{3}{@{}l}{\textit{Factors varied by design}}\\
@@ -2391,7 +2412,7 @@ Fuel & load-dependent model of \citet{bektas2011pollution} with $c^{\mathrm{f}}=
 Reference demand $R^0$ & total published mean demand, with $R^0_d$ the mean demand of the customers nearest to depot $d$; the scale is therefore a function of the published instance alone and does not depend on any solution file \\
 Stock budget & $B^{\mathrm{corp}}=\gamma_B R^0$ with $\gamma_B\in\{0.90,1.00,1.10\}$; depot bounds at $0.45$ and $1.60$ times the demand-proportional allocation, as in the generated instances \\
 Transfer network & bidirected Euclidean minimum spanning tree over the public depot coordinates, augmented by each depot's nearest omitted neighbour \\
-Transfer friction and capacity & $\kappa_{dd'}=0.15+0.35\,\tilde d_{dd'}$ in normalised depot distance; $\overline T_{dd'}=\tau\cdot\tfrac12(R^0_d+R^0_{d'})$ with $\tau\in\{0.60,1.00,1.40\}$ \\
+Transfer handling cost and capacity & $\kappa_{dd'}=0.15+0.35\,\tilde d_{dd'}$ in normalised depot distance; $\overline T_{dd'}=\tau\cdot\zeta\cdot\tfrac12(R^0_d+R^0_{d'})$ with $\zeta=0.12$ and $\tau\in\{0.60,1.00,1.40\}$, as in the generated instances \\
 External prices & $p^{\mathrm{buy}}=2.0$, $p^{\mathrm{sell}}=0.5$, as in the generated instances \\
 \bottomrule
 \end{tabular}
@@ -2624,7 +2645,7 @@ Base demands are positive lognormal draws with depot-specific scales.  Optimisat
 For the stochastic-value suite, the training samples of size 20, 50, and 100 are nested prefixes of one bank.  This construction attributes changes in performance to sample size rather than to different random draws.  The validation bank may be inspected for selecting the sample size and stopping settings.  The sealed test bank is evaluated only after all algorithmic choices have been fixed.  Exact row overlap among training, validation, and test banks is required to be zero.
 
 \paragraph{Stock parameters and transfer network}
-The reference demand $R^0_d$ is the total base demand of the customers homed at depot $d$, and $R^0=\sum_{d\in\mathcal D}R^0_d$.  It serves only as a scale: the stock budget follows from \eqref{eq:budget_stringency}, the depot positioning bounds are proportional to the demand-proportional allocation, and each transfer arc's capacity is proportional to the mean reference demand of the two depots it joins.  Because the reference is read directly off the base demands rather than computed from a constructed solution, the scale is independent of the algorithm under test by construction.  The topology, the handling-cost rule, and every constant are given in Table~\ref{tab:parameter_values}; none is recalibrated after instance performance is observed.
+The reference demand $R^0_d$ is the total base demand of the customers homed at depot $d$, and $R^0=\sum_{d\in\mathcal D}R^0_d$.  It serves only as a scale: the stock budget follows from \eqref{eq:budget_stringency}, the depot positioning bounds are proportional to the demand-proportional allocation, and each transfer arc's capacity is proportional to the mean reference demand of the two depots it joins, scaled by $\zeta=0.12$.  Because the reference is read directly off the base demands rather than computed from a constructed solution, the scale is independent of the algorithm under test by construction.  The topology, the handling-cost rule, and every constant are given in Table~\ref{tab:parameter_values}; none is recalibrated after instance performance is observed.
 
 \paragraph{Validation protocol}
 Every instance is checked before it is used, not after algorithm performance has been observed.  The checks cover dimensional consistency with the requested factor settings; positivity of coordinates, demands, and capacities; individual-vehicle feasibility of every scenario demand; fleet capacity slack under mean demand; feasibility of the depot allocation bounds relative to the corporate budget; and separation of the random streams used for geometry and for the training, validation, test, and distribution-shift draws, so that no draw is reused across roles.  An instance failing any check is regenerated; it is never silently dropped after results are known.  Section~\ref{app:verification_checklist} describes the corresponding checks applied to every reported solution.  The generation code, the full instance set, and the random seeds needed to reproduce every draw are available in the repository accompanying this paper.

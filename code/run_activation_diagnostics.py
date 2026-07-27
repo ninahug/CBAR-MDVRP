@@ -57,6 +57,12 @@ def classify(inst, scenario) -> dict:
         "dispersion": max(lam.values()) - min(lam.values()) if lam else 0.0,
         "transfer_used": transferred > TOL,
         "saturated_frac": saturated / len(inst.transfer_arcs) if inst.transfer_arcs else 0.0,
+        # Mean saturated-arc fraction understates how often congestion is live:
+        # one binding arc out of six reads as 17%. This is the share of
+        # scenarios in which *any* channel is congested, which is what decides
+        # whether the transfer-capacity factor and the capacity multipliers of
+        # Proposition prop:complementarity are exercised at all.
+        "any_saturated": saturated > 0,
         "purchased": sum(primal["b"].values()) > TOL,
         "sold": sum(primal["s"].values()) > TOL,
         "duality_gap": sol["duality_gap"],
@@ -96,18 +102,19 @@ def main() -> None:
                 "mean_price_dispersion": statistics.fmean(r["dispersion"] for r in recs),
                 "transfer_use_pct": 100.0 * sum(r["transfer_used"] for r in recs) / n,
                 "saturated_arcs_pct": 100.0 * statistics.fmean(r["saturated_frac"] for r in recs),
+                "congested_scenarios_pct": 100.0 * sum(r["any_saturated"] for r in recs) / n,
                 "purchase_pct": 100.0 * sum(r["purchased"] for r in recs) / n,
                 "sale_pct": 100.0 * sum(r["sold"] for r in recs) / n,
                 "max_duality_gap": max(r["duality_gap"] for r in recs),
             }
 
-    hdr = ("class", "scen", "coexist%", "disp", "transfer%", "sat%", "buy%", "sell%")
-    print("%-34s %5s %9s %7s %10s %6s %6s %6s" % hdr)
+    hdr = ("class", "scen", "coexist%", "disp", "transfer%", "sat%", "congest%", "buy%", "sell%")
+    print("%-34s %5s %9s %7s %10s %6s %9s %6s %6s" % hdr)
     for key, r in rows.items():
-        print("%-34s %5d %9.1f %7.3f %10.1f %6.1f %6.1f %6.1f" % (
+        print("%-34s %5d %9.1f %7.3f %10.1f %6.1f %9.1f %6.1f %6.1f" % (
             key, r["scenarios"], r["coexistence_pct"], r["mean_price_dispersion"],
             r["transfer_use_pct"], r["saturated_arcs_pct"],
-            r["purchase_pct"], r["sale_pct"]))
+            r["congested_scenarios_pct"], r["purchase_pct"], r["sale_pct"]))
 
     worst_gap = max((r["max_duality_gap"] for r in rows.values()), default=0.0)
     print("\nmax duality gap across all recourse solves: %.2e" % worst_gap)
