@@ -70,7 +70,7 @@ carbon-budget allocation and recourse multi-depot vehicle routing problem, as
 a two-stage stochastic programme in which the per-depot budget vector is the
 only non-anticipative decision, and give its deterministic-equivalent
 mixed-integer formulation with load-dependent emissions and single-commodity
-payload flow. For fixed route emissions, the carbon-account component is a
+payload flow. For fixed stock draws, the stock-account component is a
 capacitated minimum-cost transshipment problem. Its dual is an extended price
 polyhedron whose depot prices are the marginal cost of emission at each depot,
 bounded by the external purchase and sale prices and separated by at most the
@@ -81,8 +81,8 @@ problem non-convex, and it implies an institutional ordering in which a
 frictionless pooled account is never more costly than a network of
 capacity-constrained transfers, which in turn is never more costly than
 independent depot accounts. We develop a coordination method that alternates
-price-guided scenario routing at a fixed budget with an exact linear
-programme that re-optimises the budget at fixed scenario emissions, and we
+price-guided scenario routing at a fixed allocation with an exact linear
+programme that re-optimises the budget at fixed scenario stock draws, and we
 report a computational study that compares it with exact solutions and with
 sample-average and progressive-hedging benchmarks, quantifies the value of
 allocating budgets stochastically rather than at expected demand, and
@@ -161,7 +161,7 @@ different recourse channels, and a capacity-constrained internal transfer
 network -- has not, to our knowledge, been formulated.
 
 Our starting point is a structural observation. Once a scenario's routes are
-fixed, the emissions of every depot are determined, and what remains of the
+fixed, the stock draws of every depot are determined, and what remains of the
 problem is purely an accounting question: how to cover the deficits from the
 surpluses at least cost. That residual problem is a capacitated minimum-cost
 transshipment problem on the depot network augmented by an external-market
@@ -183,17 +183,17 @@ The contributions of this paper are as follows.
 \item \textbf{Model.} We formulate the carbon-budget allocation and recourse
 multi-depot vehicle routing problem as a two-stage stochastic programme in
 which the per-depot budget vector is the only non-anticipative decision, and
-in which operational and accounting recourse are represented explicitly and
+in which operational and rebalancing recourse are represented explicitly and
 separately. We give its deterministic-equivalent mixed-integer formulation
 with load-dependent emissions, single-commodity payload flow, depot
 eligibility, and a capacitated frictional transfer network, and show that
-route duration and depot emissions are determined by the combinatorial
+route duration and depot stock draws are determined by the combinatorial
 decisions alone.
 
-\item \textbf{Structure.} We show that, once routing fixes the emissions,
+\item \textbf{Structure.} We show that, once routing fixes the stock draws,
 what remains of the problem is a capacitated minimum-cost transshipment
 problem, and we read its standard duality theory as a statement about the
-firm. The dual variable of a depot's carbon account is the marginal cost of
+firm. The dual variable of a depot's stock account is the marginal cost of
 emission there; it is confined to the band between the external sale and
 purchase prices; two depots' prices cannot differ by more than the friction of
 the cheapest transfer path between them, and differ by exactly that much only
@@ -205,10 +205,10 @@ optimisable once emissions are fixed. The mathematics is standard; what is new
 is the object it is applied to and the managerial reading it supports.
 
 \item \textbf{Method and evidence.} We develop a coordination method that
-alternates price-guided routing within each scenario at a fixed budget with an
-exact linear programme that re-optimises the budget once scenario emissions
+alternates price-guided routing within each scenario at a fixed allocation with an
+exact linear programme that re-optimises the budget once scenario stock draws
 are fixed, the latter step being exact rather than heuristic because the
-recourse value is convex in the budget for fixed emissions. We evaluate it
+recourse value is convex in the allocation for fixed emissions. We evaluate it
 against exact solutions on small instances and against sample-average
 \citep{kleywegt2002sample} and progressive-hedging
 \citep{rockafellar1991scenarios} benchmarks on larger ones, quantify the value
@@ -220,7 +220,7 @@ recourse channels complement or substitute for one another.
 The remainder of the paper is organised as follows.
 Section~\ref{sec:literature_review} reviews the related literature.
 Section~\ref{sec:problem_formulation} presents the problem and its two-stage
-stochastic formulation, and Section~\ref{sec:carbon_recourse} develops the
+stochastic formulation, and Section~\ref{sec:rebalancing_recourse} develops the
 price-polyhedral structure of the carbon recourse.
 Section~\ref{sec:methodology} presents the solution method,
 Section~\ref{sec:computational_experiments} reports the computational study,
@@ -354,14 +354,14 @@ substrate for routing problems at this scale
 \citep{ropke2006adaptive,pisinger2007general}, including for emission-aware
 variants \citep{demir2012alns}, and we adopt it for the routing subproblem. Its
 operator selection is driven by search history and is therefore uninformed
-about the state of the carbon accounts. Matheuristics that combine such a
+about the state of the stock accounts. Matheuristics that combine such a
 search with an exact mathematical-programming component are by now a
 well-established design \citep{archetti2014survey}, the canonical device
 being set-partitioning reoptimisation over a pool of generated routes
 \citep{subramanian2013hybrid}. The method developed here places its exact
 component differently. Rather than reoptimising routes, it solves the
-first-stage budget problem exactly at fixed scenario emissions, which is
-possible because the recourse value is convex in the budget; and it draws
+first-stage allocation problem exactly at fixed scenario stock draws, which is
+possible because the recourse value is convex in the allocation; and it draws
 guidance for the routing search from the dual of the recourse problem, so
 that each depot carries a price and candidate moves are screened by the price
 difference between the depots they connect. Every shortlisted move is
@@ -398,10 +398,10 @@ Study & Multi-depot & Demand uncertainty & Carbon treatment & Responsibility uni
 \vspace{3pt}
 \begin{minipage}{0.95\textwidth}
 {\footnotesize \textit{Notes.} ``Responsibility unit'' is the entity against
-whose carbon account emissions are charged. ``Internal transfer'' indicates
+whose stock account emissions are charged. ``Internal transfer'' indicates
 whether the model permits carbon responsibility to be moved between
 responsibility units at a cost. A dash denotes that the attribute does not
-apply because the model contains no carbon account.}
+apply because the model contains no stock account.}
 \end{minipage}
 \end{table}
 
@@ -411,110 +411,121 @@ apply because the model contains no carbon account.}
 \subsection{Problem description and assumptions}
 \label{subsec:problem_description}
 
-We consider a distribution firm that operates a set of depots
-$\mathcal{D}$ under a centrally coordinated carbon-management programme.
-The depots are operational units with separate carbon-performance accounts,
-but they do not behave strategically: headquarters remains the single
-decision maker and the legal counterparty in the external carbon market.
-Before the demand of the next operating cycle is observed, headquarters
-delegates a binding internal carbon budget to each depot.  The allocation is
-used for responsibility accounting, performance evaluation, and the internal
-assignment of external carbon costs; it is not a statutory allowance held by
-the depot itself.
+We consider a distribution firm that serves a set of customers from a set of
+depots $\mathcal{D}$ over a single replenishment cycle.  Before the demand of
+the cycle is observed, the firm procures a quantity of stock and positions it
+across the depots.  The positioning is binding: replenishment lead times are
+long relative to the cycle, so the stock a depot holds when demand arrives is
+the stock it was given.
 
-Once demand is realised, headquarters jointly determines the customer--depot
-assignments and the vehicle routes.  The emissions of every route are charged
-to the depot at which the route is rooted.  Demand uncertainty may therefore
-leave some depot accounts in deficit and others in surplus relative to their
-ex ante budgets.  The firm has two distinct classes of recourse.  First,
-\emph{operational recourse} reallocates eligible boundary customers and
-reconstructs vehicle routes, thereby changing physical emissions.  Second,
-\emph{accounting recourse} transfers internal carbon credits through an
-authorised depot-to-depot network and settles any residual account positions
-through external purchases or sales.  Internal transfers incur directional
-friction costs and are capacity limited, representing approval, accounting,
-responsibility-adjustment, and internal-control restrictions.  External
-transactions are executed centrally, but their costs or proceeds are assigned
-to the depot accounts that generate the residual positions.
+Once demand is realised, the firm jointly determines the customer--depot
+assignments and the vehicle routes.  A depot draws from its own stock exactly
+the demand of the customers assigned to it.  Because demand is uncertain, the
+positioning will in general leave some depots short and others long, and the
+firm then has two distinct classes of recourse.  \emph{Operational recourse}
+reassigns eligible boundary customers to a different depot and rebuilds the
+routes, which moves demand towards the stock.  \emph{Inventory recourse}
+transships stock between depots over an authorised depot-to-depot network,
+which moves stock towards the demand; transfers incur a directional handling
+cost and are capacity limited, because they ride on a line-haul fleet that is
+finite and must be scheduled within the cycle.  Whatever position survives both
+channels is settled externally: a residual shortage is covered by emergency
+supply at a premium, and a residual surplus is salvaged at a discount.
 
-This distinction is material.  The ex ante budgets cannot be costlessly reset
-after demand is observed; otherwise the first-stage allocation would be a
-pure accounting convention.  Likewise, depot surpluses and deficits cannot be
-netted outside the authorised internal-transfer network; otherwise the
-transfer variables would be redundant.  The firm must consequently decide
-where to place carbon responsibility before demand is known and, after demand
-is observed, whether an imbalance should be corrected by moving service,
-moving internal carbon credits, or trading externally.  We refer to the
-resulting problem as the \emph{corporate carbon-budget allocation and recourse
-multi-depot vehicle routing problem} (CBAR-MDVRP).
+The two channels are substitutes, and their competition is what gives the
+problem its structure.  Serving a customer from a more distant depot costs a
+routing detour but moves no goods; transshipping costs handling and consumes
+scarce line-haul capacity but leaves the routes intact.  Which is cheaper
+depends on how much the customer demands and on how the depots are spaced
+relative to the customers they share, so the trade-off is not resolvable by
+inventory reasoning alone.
 
-The decision sequence is as follows.  In the first stage, headquarters chooses
-a budget vector $B=(B_d)_{d\in\mathcal D}$.  A demand scenario
+The separation between the stages is material.  The positioning cannot be
+costlessly reset once demand is observed; otherwise the first-stage decision
+would carry no operational content.  Likewise, depot shortages and surpluses
+cannot be netted outside the authorised transfer network; otherwise the
+transfer variables would be redundant.  The firm must therefore decide where to
+place stock before demand is known and, once it is observed, whether an
+imbalance is better corrected by moving service or by moving goods.  We refer
+to the resulting problem as the \emph{inventory allocation and recourse
+multi-depot vehicle routing problem} (IAR-MDVRP).
+
+The decision sequence is as follows.  In the first stage, the firm chooses an
+allocation vector $B=(B_d)_{d\in\mathcal D}$.  A demand scenario
 $\omega\in\mathcal W$ is then realised.  In the second stage, the firm chooses
-the customer assignments, vehicle routes, route payloads, depot emissions,
-internal transfers, and external trades for that scenario.  Only $B$ is
+the customer assignments, vehicle routes, route payloads, depot stock draws,
+inter-depot transfers, and external settlements for that scenario.  Only $B$ is
 non-anticipative; all routing and recourse decisions are scenario dependent.
 
 The problem can now be stated compactly.  Given a set of depots with known
-locations, fleets and carbon accounts, a set of customers with known locations
+locations, fleets and stock accounts, a set of customers with known locations
 and depot eligibility, a finite set of demand scenarios with known
-probabilities, an authorised internal transfer network with directional
-frictions and capacities, and external purchase and sale prices, the
-CBAR-MDVRP is to determine (i) a non-anticipative allocation of the corporate
-carbon budget across depots and, for each demand scenario, (ii) an assignment
-of customers to eligible depots, (iii) a set of feasible vehicle routes, and
-(iv) the internal carbon-credit transfers and external trades that settle the
+probabilities, an authorised transfer network with directional handling costs
+and capacities, and external emergency-supply and salvage prices, the
+IAR-MDVRP is to determine (i) a non-anticipative allocation of the corporate
+stock across depots and, for each demand scenario, (ii) an assignment of
+customers to eligible depots, (iii) a set of feasible vehicle routes, and
+(iv) the inter-depot transfers and external settlements that clear the
 resulting depot accounts, so as to minimise the expected sum of dispatch,
-travel, internal-transfer and external-settlement costs.
+travel, transfer and external-settlement costs.
 
 \paragraph{Assumptions}
 The model rests on the following assumptions, stated explicitly because
 several of them delimit what the formulation is intended to represent.
 
 \begin{enumerate}[label=(A\arabic*),leftmargin=*]
-\item \textbf{Centralised decision making.} Headquarters is the single
-decision maker and the sole legal counterparty in the external carbon market.
-Depots are responsibility centres and do not act strategically, so the
-allocation is a control instrument rather than the outcome of a negotiation
-or an internal auction.
+\item \textbf{Centralised decision making.} The firm is the single decision
+maker.  Depots are operating units rather than strategic agents, so the
+allocation is a planning instrument and not the outcome of a negotiation.  A
+substantial part of the transshipment literature instead studies decentralised
+systems, in which locations choose their own stock and bargain over transfer
+prices \citep{paterson2011lateral}.  The centralised case studied here is the
+one in which the allocation is a decision variable rather than an equilibrium
+outcome.
 
-\item \textbf{Binding first-stage allocation.} Depot budgets are chosen before
-demand is observed and are not revised once it is. Were they costlessly
-revisable, the first-stage decision would carry no operational content.
+\item \textbf{Binding first-stage allocation.} Depot stocks are positioned
+before demand is observed and are not replenished from outside the network
+within the cycle. Were positioning costlessly revisable, the first-stage
+decision would carry no operational content.
 
-\item \textbf{Restricted internal transfer.} Carbon responsibility moves
-between depots only along authorised arcs, at a directional friction cost and
-subject to a capacity limit, representing approval, audit and internal-control
-requirements. This restriction is what the evidence on intra-firm trading
-describes. Reviewing BP's system, \citet{victor2006bp} report that it did not
-operate as a textbook cap-and-trade market: no money changed hands on internal
-trades, the trading was mediated by corporate rather than settled between
-units, and the volumes were administratively bounded. An internal carbon
-market is therefore better represented as a constrained transfer network than
-as an unrestricted exchange, and the frictionless uncapacitated case is
-retained here only as a limiting institutional regime.
+\item \textbf{Restricted inter-depot transfer.} Stock moves between depots only
+along authorised arcs, at a directional handling cost and subject to a capacity
+limit. Capacitated transshipment is an established variant rather than a
+modelling convenience: \citet{ozdemir2006capacitated} show that limited
+transportation capacity alters the structure of the optimal transshipment
+policy, so treating transfers as unrestricted would not be a neutral
+simplification. The frictionless and uncapacitated case is retained here only
+as a limiting institutional regime.
 
-\item \textbf{Exogenous carbon prices with a positive spread.} External
-purchase and sale prices are exogenous, constant across scenarios, and satisfy
-$p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0$. The firm is a price taker, which is
-appropriate for a single distribution firm in an established compliance
-market.
+\item \textbf{Exogenous external prices with a positive spread.} Emergency
+supply and salvage prices are exogenous, constant across scenarios, and satisfy
+$p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0$. This is the newsvendor asymmetry:
+covering a shortage costs more than a surplus recovers. The firm is a price
+taker for both.
 
 \item \textbf{Scenario-invariant structure.} Customer locations, depot
-eligibility, arc data, fleet parameters and carbon prices are identical across
-scenarios; only customer demands vary. Demand uncertainty is represented by a
-finite scenario set with known probabilities.
+eligibility, arc data, fleet parameters and external prices are identical
+across scenarios; only customer demands vary. Demand uncertainty is represented
+by a finite scenario set with known probabilities.
 
 \item \textbf{Complete recourse.} Every scenario admits a feasible
 second-stage solution: each customer can be served by at least one eligible
 vehicle, and the available fleet can cover realised demand. Together with
-external trading at finite prices, this makes the recourse problem feasible
+external settlement at finite prices, this makes the recourse problem feasible
 and bounded for every first-stage decision.
+
+\item \textbf{Single allocation cycle.} The model covers one cycle between
+replenishments. Stock left at the end of the cycle is salvaged rather than
+carried forward, and demand the network cannot cover is met by emergency supply
+rather than backordered. This isolates the positioning decision from the
+replenishment dynamics that are the subject of the inventory-routing
+literature, at the cost of not representing them; Section~\ref{sec:conclusion}
+returns to what a multi-period extension would require.
 \end{enumerate}
 
 Assumption (A6) concerns operational feasibility only. It does not assume that
-any depot can meet its carbon budget, which is precisely the imbalance the
-model is built to resolve.
+any depot holds enough stock to cover the demand assigned to it, which is
+precisely the imbalance the model is built to resolve.
 
 \subsection{Mathematical model}
 \label{subsec:mathematical_formulation}
@@ -561,24 +572,25 @@ Demand uncertainty is represented by a finite scenario set $\mathcal W$.
 Scenario $\omega$ occurs with probability $\pi_\omega>0$, where
 $\sum_{\omega\in\mathcal W}\pi_\omega=1$, and customer $i$ requires
 $q_i^\omega>0$ units.  Customer locations, eligibility sets, arc data, fleet
-parameters, and carbon-market prices do not vary across scenarios.  We assume
+parameters, and external prices do not vary across scenarios.  We assume
 that every scenario is operationally feasible, in particular that each
 customer can be served by at least one eligible vehicle and that the available
 fleet can cover the realised demand.
 
-The corporate carbon budget is $B^{\mathrm{corp}}$.  Headquarters chooses
-$B_d$ for depot $d$, subject to lower and upper responsibility bounds
-$\underline B_d$ and $\overline B_d$.  We assume
+The stock procured for the cycle is $B^{\mathrm{corp}}$.  The firm allocates
+$B_d$ of it to depot $d$, subject to lower and upper positioning bounds
+$\underline B_d$ and $\overline B_d$, which represent the storage and handling
+limits of the site.  We assume
 \begin{equation*}
 \sum_{d\in\mathcal D}\underline B_d
 \le B^{\mathrm{corp}}
 \le\sum_{d\in\mathcal D}\overline B_d.
 \end{equation*}
-One unit of internal carbon credit covers one unit of route emission.
+Stock and demand are measured in the same units.
 
-Internal transfers use the directed network
+Inter-depot transfers use the directed network
 $\mathcal G^T=(\mathcal D,\mathcal A^T)$.  For
-$a=(d,d')\in\mathcal A^T$, $\kappa_{dd'}\ge0$ is the unit transfer friction
+$a=(d,d')\in\mathcal A^T$, $\kappa_{dd'}\ge0$ is the unit handling cost
 and $\overline T_{dd'}\ge0$ is the transfer capacity.  Define the outgoing and
 incoming transfer-arc sets
 \begin{equation*}
@@ -586,14 +598,14 @@ incoming transfer-arc sets
 \qquad
 \delta_T^-(d)=\{(d',d)\in\mathcal A^T\}.
 \end{equation*}
-Residual deficits are purchased externally at $p^{\mathrm{buy}}$, and residual
-surpluses are sold at $p^{\mathrm{sell}}$, with
+Residual shortages are covered by emergency supply at $p^{\mathrm{buy}}$, and
+residual surpluses are salvaged at $p^{\mathrm{sell}}$, with
 \begin{equation}
 p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0.
 \label{eq:market_spread}
 \end{equation}
-The strict spread rules out simultaneous purchase and sale as an optimal
-accounting action and prevents external-market arbitrage.
+The strict spread rules out simultaneous emergency supply and salvage at the
+same depot and prevents arbitrage between the two external prices.
 
 Table~\ref{tab:main_notation} collects the sets, parameters and decision
 variables used throughout.
@@ -627,14 +639,14 @@ $d_{ij},\ \tau_{ij},\ c_{ij}$ & Distance, travel time and operating cost of arc 
 $\sigma_i$ & Service duration at customer $i$. \\
 $Q_k,\ F_k,\ H_k$ & Capacity, fixed dispatch cost and maximum route duration of vehicle $k$. \\
 $\rho_k^0,\ \rho_k^Q$ & Empty- and full-load fuel rates of vehicle $k$, $\rho_k^Q\ge\rho_k^0\ge0$. \\
-$\theta$ & Conversion factor from fuel use to carbon emission, $\theta>0$. \\
-$B^{\mathrm{corp}}$ & Corporate carbon budget for the operating cycle. \\
-$\underline B_d,\ \overline B_d$ & Lower and upper responsibility bounds on the budget of depot $d$. \\
-$\kappa_{dd'},\ \overline T_{dd'}$ & Unit friction cost and capacity of transfer arc $(d,d')$. \\
-$p^{\mathrm{buy}},\ p^{\mathrm{sell}}$ & External purchase and sale prices, $p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0$. \\
+$c^{\mathrm{f}}$ & Unit cost of fuel, $c^{\mathrm{f}}>0$. \\
+$B^{\mathrm{corp}}$ & Stock procured for the operating cycle. \\
+$\underline B_d,\ \overline B_d$ & Lower and upper positioning bounds on the stock held at depot $d$. \\
+$\kappa_{dd'},\ \overline T_{dd'}$ & Unit handling cost and capacity of transfer arc $(d,d')$. \\
+$p^{\mathrm{buy}},\ p^{\mathrm{sell}}$ & Emergency-supply and salvage prices, $p^{\mathrm{buy}}>p^{\mathrm{sell}}\ge0$. \\
 \midrule
 \multicolumn{2}{@{}l}{\textit{First-stage decision variable}}\\
-$B_d$ & Carbon budget delegated to depot $d$; common to all scenarios. \\
+$B_d$ & Stock allocated to depot $d$; common to all scenarios. \\
 \midrule
 \multicolumn{2}{@{}l}{\textit{Second-stage decision variables (scenario $\omega$)}}\\
 $y_{id}^\omega$ & $1$ if customer $i$ is assigned to depot $d$. \\
@@ -642,9 +654,9 @@ $z_i^{k\omega}$ & $1$ if vehicle $k$ serves customer $i$. \\
 $x_{ij}^{k\omega}$ & $1$ if vehicle $k$ traverses arc $(i,j)$. \\
 $a_k^\omega$ & $1$ if vehicle $k$ is dispatched. \\
 $f_{ij}^{k\omega}$ & Payload carried by vehicle $k$ on arc $(i,j)$. \\
-$E_d^\omega$ & Emission of the routes rooted at depot $d$. \\
-$t_{dd'}^\omega$ & Internal carbon credit transferred from depot $d$ to depot $d'$. \\
-$b_d^\omega,\ s_d^\omega$ & External purchase and sale assigned to the account of depot $d$. \\
+$U_d^\omega$ & Stock drawn at depot $d$, that is, the demand assigned to it. \\
+$t_{dd'}^\omega$ & Stock transshipped from depot $d$ to depot $d'$. \\
+$b_d^\omega,\ s_d^\omega$ & Emergency supply and salvage assigned to the account of depot $d$. \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -655,7 +667,7 @@ The first-stage variable is $B_d\ge0$.  For every scenario $\omega$, the
 binary variables are $y_{id}^\omega$ (customer--depot assignment),
 $z_i^{k\omega}$ (vehicle service), $x_{ij}^{k\omega}$ (arc use), and
 $a_k^\omega$ (vehicle dispatch).  The nonnegative continuous variables are
-$f_{ij}^{k\omega}$ (payload), $E_d^\omega$ (depot emission),
+$f_{ij}^{k\omega}$ (payload), $U_d^\omega$ (depot stock draw),
 $t_{dd'}^\omega$ (internal transfer), $b_d^\omega$ (external purchase), and
 $s_d^\omega$ (external sale).
 
@@ -665,7 +677,9 @@ The deterministic equivalent is
 \sum_{\omega\in\mathcal W}\pi_\omega\Bigg[
 \sum_{k\in\mathcal K}F_k a_k^\omega
 +\sum_{k\in\mathcal K}\sum_{(i,j)\in\mathcal A_k}
- c_{ij}x_{ij}^{k\omega}
+ \left[c_{ij}x_{ij}^{k\omega}
+ +c^{\mathrm{f}}d_{ij}\left(\rho_k^0x_{ij}^{k\omega}
+ +\frac{\rho_k^Q-\rho_k^0}{Q_k}f_{ij}^{k\omega}\right)\right]
 \notag\\[-1mm]
 &\hspace{29mm}
 +\sum_{(d,d')\in\mathcal A^T}\kappa_{dd'}t_{dd'}^\omega
@@ -674,7 +688,7 @@ The deterministic equivalent is
 \Bigg]
 \label{eq:obj}
 \end{align}
-subject to the first-stage budget constraints
+subject to the first-stage allocation constraints
 \begin{align}
 &\sum_{d\in\mathcal D}B_d=B^{\mathrm{corp}},
 \label{eq:budget_total}\\
@@ -741,24 +755,30 @@ excludes a customer subtour disconnected from the vehicle origin: summing
 \eqref{eq:c17} over such a subtour would give zero net boundary flow but a
 strictly positive total demand.
 
-The load-dependent emission charged to depot $d$ is
+The stock drawn at depot $d$ is the demand of the customers assigned to it,
 \begin{align}
-E_d^\omega={}&
-\sum_{k\in\mathcal K_d}\sum_{(i,j)\in\mathcal A_k}
-\theta d_{ij}\left[
-\rho_k^0x_{ij}^{k\omega}
-+\frac{\rho_k^Q-\rho_k^0}{Q_k}f_{ij}^{k\omega}
-\right],
-&&\forall d\in\mathcal D,
+&U_d^\omega=\sum_{i\in\mathcal C:\,d\in\Omega_i}q_i^\omega y_{id}^\omega,
+&&\forall d\in\mathcal D.
 \label{eq:c20}
 \end{align}
-where $\theta>0$ converts fuel use into carbon emission and
-$\rho_k^Q\ge\rho_k^0\ge0$.  The first term prices empty-vehicle distance,
-whereas the second term captures the additional effect of the payload carried
-on each arc.  Hence customer sequencing affects emissions even when route
-distance is unchanged.
+Two features of \eqref{eq:c20} matter later.  First, it is linear in the
+assignment variables, so the stock account couples to the routing layer only
+through \emph{which} depot serves each customer, and not through the order in
+which customers are visited.  Second, and consequently, when the account is
+priced at a depot price vector $\lambda$ the resulting term
+$\sum_d\lambda_dU_d^\omega=\sum_iq_i^\omega\lambda_{d(i)}$ is separable across
+customers: the price enters the routing subproblem as a per-customer incentive
+to reassign, worth $q_i^\omega$ times the price gap between two eligible
+depots.  Section~\ref{sec:methodology} builds on this.
 
-Internal transfers and depot carbon accounts satisfy
+Sequencing is not thereby irrelevant to cost.  The fuel term of \eqref{eq:obj}
+follows the load-dependent consumption model of \citet{bektas2011pollution}:
+$\rho_k^0$ prices empty-vehicle distance and $(\rho_k^Q-\rho_k^0)/Q_k$ prices
+the payload carried on each arc, with $\rho_k^Q\ge\rho_k^0\ge0$.  Serving heavy
+customers early keeps the payload on later arcs low, so the visiting order
+changes fuel cost even when route distance does not.
+
+Inter-depot transfers and depot stock accounts satisfy
 \begin{align}
 &0\le t_{dd'}^\omega\le\overline T_{dd'},
 &&\forall(d,d')\in\mathcal A^T,
@@ -766,25 +786,25 @@ Internal transfers and depot carbon accounts satisfy
 &B_d
 +\sum_{(h,d)\in\delta_T^-(d)}t_{hd}^\omega
 +b_d^\omega
-=E_d^\omega
+=U_d^\omega
 +\sum_{(d,h)\in\delta_T^+(d)}t_{dh}^\omega
 +s_d^\omega,
 &&\forall d\in\mathcal D.
 \label{eq:account_balance}
 \end{align}
-The left-hand side of \eqref{eq:account_balance} is the carbon credit available
-to depot $d$: its ex ante budget, incoming internal transfers, and external
-purchases.  The right-hand side is its use of credit: route emissions,
-outgoing transfers, and external sales.  The account equation is the only
-constraint that directly connects the first-stage allocation to the
-scenario-wise physical and financial recourse decisions.
+The left-hand side of \eqref{eq:account_balance} is the stock available to
+depot $d$: its ex ante allocation, incoming transfers, and emergency supply.
+The right-hand side is the use of that stock: the demand it serves, outgoing
+transfers, and salvaged surplus.  The account equation is the only constraint
+that directly connects the first-stage allocation to the scenario-wise
+physical and financial recourse decisions.
 
 The variable domains are
 \begin{align}
 &B_d\ge0,
 &&\forall d\in\mathcal D,
 \notag\\
-&E_d^\omega,b_d^\omega,s_d^\omega\ge0,
+&U_d^\omega,b_d^\omega,s_d^\omega\ge0,
 &&\forall d\in\mathcal D,\ \forall\omega\in\mathcal W,
 \notag\\
 &x_{ij}^{k\omega},y_{id}^\omega,z_i^{k\omega},a_k^\omega\in\{0,1\},
@@ -800,14 +820,14 @@ All second-stage constraints above are imposed for every
 $\omega\in\mathcal W$; the scenario quantifier is suppressed after the first
 line of each block to improve readability.
 
-The objective \eqref{eq:obj} is measured in monetary units.  Its first two
-terms are dispatch and travel costs, the third is the internal organisational
-cost of reallocating carbon responsibility, and the last two terms are the
-cost and revenue assigned to depot accounts from external trading.  Since
-$p^{\mathrm{buy}}>p^{\mathrm{sell}}$, simultaneous external purchase and sale
-at one depot cannot be optimal: reducing both variables by their smaller value
-preserves \eqref{eq:account_balance} and strictly reduces the objective by the
-buy--sell spread.  No additional binary market-status variable is required.
+The objective \eqref{eq:obj} is measured in monetary units.  Its first term is
+the dispatch cost, the second combines distance and load-dependent fuel cost,
+the third is the handling cost of moving stock between depots, and the last two
+are the cost of emergency supply and the revenue from salvage.  Since
+$p^{\mathrm{buy}}>p^{\mathrm{sell}}$, drawing emergency supply and salvaging at
+the same depot cannot be optimal: reducing both variables by their smaller
+value preserves \eqref{eq:account_balance} and strictly reduces the objective
+by the spread.  No additional binary status variable is required.
 
 \paragraph{Complexity}
 \begin{proposition}[Complexity]
@@ -817,20 +837,20 @@ The CBAR-MDVRP is $\mathcal{NP}$-hard in the strong sense.
 
 \begin{proof}
 Consider an instance with a single scenario of probability one, a single
-depot, a corporate budget large enough that
+depot, a stock allocation large enough that
 $\underline B_d\le B^{\mathrm{corp}}$ is satisfied with
-$B_d^{\phantom{|}}\ge E_d$ at any feasible routing, and
-$p^{\mathrm{sell}}=0$. The carbon account is then slack at every solution,
-the transfer and trading variables are zero at optimality, and the objective
-reduces to dispatch and travel cost over capacitated routes rooted at one
-depot. This is the capacitated vehicle routing problem, which is
+$B_d^{\phantom{|}}\ge U_d$ at any feasible assignment, and
+$p^{\mathrm{sell}}=0$. The stock account is then slack at every solution,
+the transfer and settlement variables are zero at optimality, and the objective
+reduces to dispatch, distance and fuel cost over capacitated routes rooted at
+one depot. This is the capacitated vehicle routing problem, which is
 $\mathcal{NP}$-hard in the strong sense. Allowing several depots and several
 scenarios only enlarges the instance class.
 \end{proof}
 
 Proposition~\ref{prop:complexity} concerns the routing layer, which the model
-inherits. The carbon layer does not by itself create the difficulty: for
-fixed routing, Section~\ref{sec:carbon_recourse} shows that what remains is a
+inherits. The allocation layer does not by itself create the difficulty: for
+fixed routing, Section~\ref{sec:rebalancing_recourse} shows that what remains is a
 linear programme. The interaction of the two layers is what the solution
 method in Section~\ref{sec:methodology} is designed to exploit.
 
@@ -842,21 +862,23 @@ method in Section~\ref{sec:methodology} is designed to exploit.
 Fix a scenario $\omega$ and a feasible binary routing plan
 $(x^\omega,y^\omega,z^\omega,a^\omega)$.  Along each used route, the payload on
 an arc is uniquely equal to the sum of the demands of the customers that
-remain to be served.  Consequently the route duration and every depot emission
-$E_d^\omega$ are uniquely determined by the customer assignments, route
-partition, and customer sequences.  For a fixed first-stage budget $B$, the
-remaining carbon-account contribution is the optimal value of the linear
-recourse problem defined in Section~\ref{sec:carbon_recourse}.
+remain to be served.  Consequently the route duration and the fuel consumed
+are uniquely determined by the customer assignments, route partition, and
+customer sequences, while each depot stock draw $U_d^\omega$ is determined by
+the assignments alone.  For a fixed first-stage allocation $B$, the remaining
+account contribution is the optimal value of the linear recourse problem
+defined in Section~\ref{sec:rebalancing_recourse}.
 \end{corollary}
 
 \begin{proof}
 Starting from the zero payload on the terminal arc, equations
 \eqref{eq:c17}--\eqref{eq:c19b} determine the payloads backwards along each
 route as suffix demands; \eqref{eq:c16} is then satisfied at the origin.
-Substitution in \eqref{eq:c20} determines depot emissions.  Route duration is
-the sum appearing in \eqref{eq:c12}.  Once $B$ and $E^\omega$ are fixed, only
-the internal-transfer and external-trading variables remain in the carbon
-accounts, and their minimum cost is the recourse value introduced below.
+Substitution in the fuel term of \eqref{eq:obj} determines the fuel cost, and
+\eqref{eq:c20} gives the stock draws directly from the assignment.  Route
+duration is the sum appearing in \eqref{eq:c12}.  Once $B$ and $U^\omega$ are
+fixed, only the transfer and settlement variables remain in the stock accounts,
+and their minimum cost is the recourse value introduced below.
 \end{proof}
 
 \paragraph{Valid inequalities and symmetry breaking}
@@ -894,9 +916,9 @@ feasible routing plans.
 
 Let $\mathcal X(q^\omega)$ denote the feasible set of the scenario routing and
 payload variables defined by \eqref{eq:c1}--\eqref{eq:c20}.  Let
-$C_{\mathrm{op}}(S^\omega)$ be the dispatch and travel cost of a routing plan
+$C_{\mathrm{op}}(S^\omega)$ be the dispatch, distance and fuel cost of a routing plan
 $S^\omega\in\mathcal X(q^\omega)$, and let
-$E(S^\omega)=(E_d(S^\omega))_{d\in\mathcal D}$.  The extensive-form model can
+$U(S^\omega)=(U_d(S^\omega))_{d\in\mathcal D}$.  The extensive-form model can
 be written compactly as
 \begin{equation}
 \min_{B\in\mathcal B}
@@ -904,7 +926,7 @@ be written compactly as
 \min_{S^\omega\in\mathcal X(q^\omega)}
 \left\{
 C_{\mathrm{op}}(S^\omega)
-+\Psi_{\overline T}\bigl(E(S^\omega)-B\bigr)
++\Psi_{\overline T}\bigl(U(S^\omega)-B\bigr)
 \right\},
 \label{eq:two_stage_value_form}
 \end{equation}
@@ -914,47 +936,50 @@ where
 \sum_{d\in\mathcal D}B_d=B^{\mathrm{corp}},\quad
 \underline B_d\le B_d\le\overline B_d\right\},
 \end{equation*}
-and $\Psi_{\overline T}$ is the network-constrained carbon-recourse value
-function developed in Section~\ref{sec:carbon_recourse}.
+and $\Psi_{\overline T}$ is the network-constrained rebalancing-recourse value
+function developed in Section~\ref{sec:rebalancing_recourse}.
 
-Three institutional regimes are nested in \eqref{eq:two_stage_value_form}: independent depot accounts when every transfer capacity is zero, the network-constrained regime studied here when frictions are positive and capacities finite, and a fully pooled corporate account when transfers are frictionless and never binding. Section~\ref{subsec:institutional} establishes the relation between them, and identifies the conditions under which the first-stage allocation ceases to matter.
+Three institutional regimes are nested in \eqref{eq:two_stage_value_form}: independent depot stocks when every transfer capacity is zero, the network-constrained regime studied here when handling costs are positive and capacities finite, and a fully pooled central inventory when transfers are costless and never binding. Section~\ref{subsec:institutional} establishes the relation between them, and identifies the conditions under which the first-stage allocation ceases to matter.
 
 %%=====================================================================
-\section{Structure of the Carbon Recourse}
-\label{sec:carbon_recourse}
+\section{Structure of the Rebalancing Recourse}
+\label{sec:rebalancing_recourse}
 \label{subsec:structural}
 
-This section isolates the accounting recourse that remains once a scenario's
-routing plan has fixed the depot emissions. What remains is a linear
+This section isolates the rebalancing recourse that remains once a scenario's
+routing plan has fixed the depot stock draws. What remains is a linear
 programme, and the results below are the standard duality and convexity
 properties of such a programme, specialised to the transfer network of this
 model. Their interest is not technical but interpretive: they say what the
-dual variables of the carbon accounts \emph{mean} for the firm, and they
+dual variables of the stock accounts \emph{mean} for the firm, and they
 identify the two facts the solution method depends on -- that the optimal
 prices bound the effect of a routing change, and that the value function is
-convex in the budget. Readers familiar with minimum-cost flow duality may
+convex in the allocation. Readers familiar with minimum-cost flow duality may
 read Propositions~\ref{prop:recourse_flow}--\ref{prop:complementarity} for
 the interpretation rather than for the argument.
 
 Two limits of scope should be stated at the outset. The convexity established
-here concerns the continuous recourse function at fixed routing emissions; it
+here concerns the continuous recourse function at fixed stock draws; it
 does not make the two-stage routing problem convex, and no result in this
 section bears on the difficulty of the routing decisions themselves. Nor is
 the price a valuation of a routing plan: it is exact for the accounts given
-the emissions, and its use in the search is justified in
+the stock draws, and its use in the search is justified in
 Section~\ref{sec:methodology} by an inequality, not by an equality.
 
-\subsection{The carbon-recourse value function}
+\subsection{The rebalancing-recourse value function}
 \label{subsec:recourse_value}
 
 Suppress the scenario superscript and define the depot net-deficit vector
 \begin{equation}
-g_d=E_d-B_d,
+g_d=U_d-B_d,
 \qquad d\in\mathcal D.
 \label{eq:net_deficit}
 \end{equation}
-A positive $g_d$ is a deficit and a negative $g_d$ is a surplus.  For fixed
-$g$, the minimum carbon-account recourse cost is
+A positive $g_d$ is a deficit and a negative $g_d$ is a surplus.  In the
+programme below, emergency supply enters as an external purchase $b_d$ at
+$p^{\mathrm{buy}}$ and salvage as an external sale $s_d$ at $p^{\mathrm{sell}}$;
+the shorter words are used throughout the duality arguments.  For fixed
+$g$, the minimum rebalancing cost is
 \begin{align}
 \Psi_{\overline T}(g)=
 \min_{t,b,s}\quad&
@@ -980,15 +1005,15 @@ $g$, the minimum carbon-account recourse cost is
 For every $g\in\mathbb R^{|\mathcal D|}$, problem
 \eqref{eq:recourse_primal}--\eqref{eq:recourse_domain} is feasible and has a
 finite optimum.  It is a capacitated minimum-cost transshipment problem on the
-internal transfer network augmented by an external-market node.
+internal transfer network augmented by an external-settlement node.
 \end{proposition}
 
 \begin{proof}
 Feasibility follows by setting $t=0$, $b_d=[g_d]_+$, and
 $s_d=[-g_d]_+$, where $[u]_+=\max\{u,0\}$.  To obtain the network
-interpretation, add an external-market node.  A purchase is an arc from the
-market node to depot $d$ with unit cost $p^{\mathrm{buy}}$, a sale is an arc
-from depot $d$ to the market node with unit cost $-p^{\mathrm{sell}}$, and an
+interpretation, add an external-settlement node.  A purchase is an arc from the
+external-settlement node to depot $d$ with unit cost $p^{\mathrm{buy}}$, a sale is an arc
+from depot $d$ to the external-settlement node with unit cost $-p^{\mathrm{sell}}$, and an
 internal arc $(d,d')$ has cost $\kappa_{dd'}$ and capacity
 $\overline T_{dd'}$.  The depot imbalances are $g$.  Internal cycles have
 nonnegative cost, and every cycle that purchases externally and later sells
@@ -1042,13 +1067,13 @@ Define the extended price polyhedron
 \eqref{eq:dual_price_bounds}--\eqref{eq:dual_mu_domain}\right\}.
 \label{eq:extended_price_polyhedron}
 \end{equation}
-The variable $\lambda_d$ is the marginal cost of an additional unit of
-emission at depot $d$, equivalently the marginal saving from one additional
-unit of budget at that depot while the routing emissions are fixed.  The
-external market bounds this value between its sale and purchase prices.  The
-arc inequality prevents a price difference from exceeding the cost of moving
-one unit of internal credit, unless the transfer capacity is congested and
-therefore carries a positive multiplier $\mu_{dd'}$.
+The variable $\lambda_d$ is the marginal cost of one additional unit of demand
+drawn at depot $d$, equivalently the marginal saving from one additional unit
+of stock allocated there while the assignments are fixed.  The external options
+bound this value between the salvage and emergency-supply prices.  The arc
+inequality prevents a price difference from exceeding the cost of moving one
+unit of stock between the two depots, unless the transfer capacity is congested
+and therefore carries a positive multiplier $\mu_{dd'}$.
 
 \begin{proposition}[Price-polyhedral dual representation]
 \label{prop:price_polyhedron}
@@ -1218,8 +1243,9 @@ that is, for every $g'$,
 \label{eq:subgradient_inequality}
 \end{equation}
 Thus $\lambda_d^*$ is simultaneously the local marginal recourse cost of one
-additional unit of depot emission and the local marginal saving from one
-additional unit of depot budget, conditional on the current routing emissions.
+additional unit of demand drawn at a depot and the local marginal saving from
+one additional unit of stock allocated to it, conditional on the current
+assignments.
 \end{proposition}
 
 \begin{proof}
@@ -1236,11 +1262,11 @@ where the equality uses optimality at $g$.
 \begin{remark}[Scope of the marginal signal]
 \label{rem:local_price_scope}
 The subgradient in Proposition~\ref{prop:recourse_subgradient} is exact for the
-continuous carbon-recourse function with the routing emissions fixed.  The
+continuous rebalancing-recourse function with the stock draws fixed.  The
 complete scenario value
 \begin{equation*}
 Q(B,\omega)=\min_{S\in\mathcal X(q^\omega)}
-\left\{C_{\mathrm{op}}(S)+\Psi_{\overline T}(E(S)-B)\right\}
+\left\{C_{\mathrm{op}}(S)+\Psi_{\overline T}(U(S)-B)\right\}
 \end{equation*}
 contains integer routing decisions and need not be convex in $B$.  A depot
 price obtained at the current routing plan is therefore a rigorous recourse
@@ -1272,7 +1298,7 @@ For a fixed net-deficit vector $g$:
 \Psi_{\mathrm{pool}}(g)=\varphi\!\left(\sum_{d\in\mathcal D}g_d\right).
 \label{eq:pooled_recourse}
 \end{equation}
-In the fully pooled case, $\Psi_{\mathrm{pool}}(E-B)$ depends on $B$ only
+In the fully pooled case, $\Psi_{\mathrm{pool}}(U-B)$ depends on $B$ only
 through $\sum_dB_d=B^{\mathrm{corp}}$.
 \end{enumerate}
 \end{proposition}
@@ -1290,14 +1316,14 @@ then becomes
 \alpha\sum_dg_d
 =\varphi\!\left(\sum_dg_d\right).
 \end{equation*}
-Since $\sum_d(E_d-B_d)=\sum_dE_d-B^{\mathrm{corp}}$, the distribution of the
-first-stage budget does not affect pooled recourse.
+Since $\sum_d(U_d-B_d)=\sum_dU_d-B^{\mathrm{corp}}$, the distribution of the
+first-stage allocation does not affect pooled recourse.
 \end{proof}
 
 \begin{remark}[Canonical implementation of the fully pooled regime]
 \label{rem:canonical_pooling}
 The fully pooled regime should be evaluated directly through
-\eqref{eq:pooled_recourse}, or equivalently by a single corporate market
+\eqref{eq:pooled_recourse}, or equivalently by a single central inventory
 account.  Implementing it as a strongly connected zero-cost transfer network
 can create arbitrary zero-cost circulation flows: the recourse value and the
 common price remain correct, but the resulting arc flows are non-unique and
@@ -1313,7 +1339,7 @@ Section~\ref{subsec:model_interpretation} can now be ranked.
 
 \begin{corollary}[Institutional nesting]
 \label{cor:institutional_nesting}
-Consider otherwise identical routing and budget-allocation models.  Let the
+Consider otherwise identical routing and allocation models.  Let the
 fully pooled regime have zero transfer frictions and nonbinding capacities,
 let the network-constrained regime use the specified positive frictions and
 finite capacities, and let the independent regime prohibit all internal
@@ -1335,18 +1361,29 @@ under a more restrictive regime remains feasible under the less restrictive
 regime, so minimising over the nested feasible sets gives the inequalities.
 \end{proof}
 
-\paragraph{Degenerate budget-allocation cases}
+The ordering \eqref{eq:institutional_nesting} has a pure-inventory antecedent.
+\citet{rosales2013retailer} compare a supply network in which retailers
+transship among themselves once demand is realised against one in which a
+central depot allocates, and examine how the cost of each structure responds to
+demand variability.  Their setting carries no routing: the locations are fixed
+demand points, and serving them costs nothing that depends on which location
+holds the stock.  What \eqref{eq:institutional_nesting} adds is that the
+comparison survives when the locations are depots whose customers must be
+routed, and that the intermediate regime is then limited not only by the cost
+of moving stock but by the routing detours the alternative channel requires.
+
+\paragraph{Degenerate allocation cases}
 The special cases also delimit the economic scope of the first stage.  Under
 frictionless full pooling, any feasible allocation with the same corporate
 total produces the same recourse value.  If
 $p^{\mathrm{buy}}=p^{\mathrm{sell}}$, the external settlement is linear and
 cross-depot netting no longer avoids a bid--ask spread.  Finally, if all depots
 are simultaneously in deficit in every relevant scenario, the optimal
-external purchase cost is
-$p^{\mathrm{buy}}(\sum_dE_d-B^{\mathrm{corp}})$; if all are simultaneously in
+emergency-supply cost is
+$p^{\mathrm{buy}}(\sum_dU_d-B^{\mathrm{corp}})$; if all are simultaneously in
 surplus, the corresponding sale value depends only on the same aggregate
 position.  In either case, the distribution of $B$ may cease to affect the
-accounting cost.  Meaningful ex ante allocation therefore requires
+rebalancing cost.  Meaningful ex ante allocation therefore requires
 cross-depot and cross-scenario heterogeneity together with nontrivial internal
 or external frictions.
 
@@ -1360,7 +1397,7 @@ price-linearised change in the objective produced by a routing move is a
 valid lower bound on its true change. A move that improves the true cost
 therefore improves the linearisation as well, and a search conducted on the
 linearised objective cannot overlook an improvement of the exact one.  Second, $\Psi_{\overline T}$ is convex and piecewise linear in
-its argument, hence convex in the budget $B$ once route emissions are fixed,
+its argument, hence convex in the allocation $B$ once stock draws are fixed,
 so the first-stage allocation can be re-optimised exactly by linear
 programming rather than heuristically.  The remaining difficulty is the
 integer routing problem, which none of these results convexifies.
@@ -1368,7 +1405,7 @@ integer routing problem, which none of these results convexifies.
 \section{Solution Method}
 \label{sec:methodology}
 
-The deterministic equivalent in Section~\ref{sec:problem_formulation} is exact but grows rapidly with the number of demand scenarios and routing variables. We therefore develop the \emph{price-polyhedral budget--routing coordination} matheuristic (PPBRC). Its design follows directly from the recourse value function in Section~\ref{sec:carbon_recourse}. The method alternates between scenario-wise routing optimisation at a fixed first-stage budget and an exact multi-scenario budget--recourse optimisation at fixed route emissions. The first block uses depot prices and transfer-capacity multipliers generated by the exact carbon-recourse oracle; the second block reallocates the corporate carbon budget without approximating the accounting recourse.
+The deterministic equivalent in Section~\ref{sec:problem_formulation} is exact but grows rapidly with the number of demand scenarios and routing variables. We therefore develop the \emph{price-polyhedral budget--routing coordination} matheuristic (PPBRC). Its design follows directly from the recourse value function in Section~\ref{sec:rebalancing_recourse}. The method alternates between scenario-wise routing optimisation at a fixed first-stage allocation and an exact multi-scenario budget--recourse optimisation at fixed stock draws. The first block uses depot prices and transfer-capacity multipliers generated by the exact rebalancing-recourse oracle; the second block reallocates the corporate stock budget without approximating the rebalancing recourse.
 
 \subsection{Solution framework}
 \label{subsec:ppbrc_architecture}
@@ -1377,12 +1414,12 @@ The deterministic equivalent in Section~\ref{sec:problem_formulation} is exact b
 A solution consists of a first-stage vector $B\in\mathcal B$ and, for every
 scenario $\omega\in\mathcal W$, a feasible routing plan $S^\omega$. Writing
 $C_{\mathrm{op}}^\omega(S^\omega)$ for the dispatch and travel cost and
-$E^\omega(S^\omega)$ for the vector of depot emissions, the cost of scenario
+$U^\omega(S^\omega)$ for the vector of depot stock draws, the cost of scenario
 $\omega$ is
 \begin{equation}
  Z_\omega(S^\omega;B)
  =C_{\mathrm{op}}^\omega(S^\omega)
- +\Psi_{\overline T}\!\left(E^\omega(S^\omega)-B\right),
+ +\Psi_{\overline T}\!\left(U^\omega(S^\omega)-B\right),
  \label{eq:ppbrc_true_scenario}
 \end{equation}
 and the objective of the model is
@@ -1390,7 +1427,7 @@ $Z(B,S)=\sum_{\omega\in\mathcal W}\pi_\omega Z_\omega(S^\omega;B)$.
 
 The formulation decomposes in two directions. Fixing $B$ removes the only
 variable common to the scenarios, so the second-stage problems separate and
-may be treated independently. Fixing the emissions $E^\omega$ removes the
+may be treated independently. Fixing the stock draws $U^\omega$ removes the
 combinatorial content, leaving a linear programme in the budget and the
 accounting variables. Neither restriction is a relaxation: each is an exact
 subproblem of the deterministic equivalent, and the method alternates between
@@ -1401,15 +1438,15 @@ differently for that reason. The routing subproblem is $\mathcal{NP}$-hard by
 Proposition~\ref{prop:complexity} and is addressed heuristically. The budget
 subproblem is convex by Proposition~\ref{prop:recourse_properties} and is
 solved to optimality by linear programming. The price polyhedron of
-Section~\ref{sec:carbon_recourse} supplies the link between them: it
-expresses the accounting consequence of a change in emissions as a vector of
+Section~\ref{sec:rebalancing_recourse} supplies the link between them: it
+expresses the rebalancing consequence of a change in the stock draws as a vector of
 depot prices, which is precisely the information the routing subproblem
 requires and could otherwise obtain only by re-solving a recourse problem for
 each candidate. The prices themselves are defined in
 Section~\ref{subsec:recourse_oracle}.
 
 The two subproblems are alternated, but not every scenario need be revisited
-at every pass. After the budget step moves $B$ to $B'$, the deficit of every
+at every pass. After the allocation step moves $B$ to $B'$, the deficit of every
 scenario moves by the same vector $-(B'-B)$. If that perturbation satisfies
 the condition of Proposition~\ref{prop:certified_region} for scenario
 $\omega$, the optimal prices of that scenario are unchanged, so its routing
@@ -1423,12 +1460,13 @@ same fact by re-solving.
 Algorithm~\ref{alg:ppbrc} states the resulting procedure, and
 Figure~\ref{fig:ppbrc_flow} shows its structure.
 
-An initial routing plan is obtained for each scenario by inserting customers at their cheapest feasible position, opening a vehicle when no such position exists. The initial budget is proportional to expected reference emissions and is projected onto $\mathcal B$. Two variants are distinguished. \emph{PPBRC-core} runs the scheme from a single deterministic construction and confines the neighbourhood search to small removals. \emph{PPBRC} constructs several initial plans and retains the best, admits occasional large removals during the search, and closes with the recombination step described next. The distinction isolates the contribution of the coordination scheme from that of diversification, and both variants are reported separately in Section~\ref{sec:computational_experiments}.
+An initial routing plan is obtained for each scenario by inserting customers at their cheapest feasible position, opening a vehicle when no such position exists. The initial budget is proportional to expected reference demand and is projected onto $\mathcal B$. Two variants are distinguished. \emph{PPBRC-core} runs the scheme from a single deterministic construction and confines the neighbourhood search to small removals. \emph{PPBRC} constructs several initial plans and retains the best, admits occasional large removals during the search, and closes with the recombination step described next. The distinction isolates the contribution of the coordination scheme from that of diversification, and both variants are reported separately in Section~\ref{sec:computational_experiments}.
 
 \paragraph{Recombination of pooled routes}
 At a fixed price the scenario objective \eqref{eq:priced_routing_subproblem}
-is a sum over routes: each contributes its own distance and its own emission,
-priced at the depot it is rooted in, and no term couples two routes. The best
+is a sum over routes: each contributes its own distance, its own fuel cost and
+its own load, the last priced at the depot the route is rooted in, and no term
+couples two routes. The best
 combination of any set of feasible routes is therefore the optimal solution of
 a set-partitioning problem, which covers every customer once and respects each
 depot's fleet. Neighbourhood search follows a single trajectory and can hold
@@ -1447,7 +1485,7 @@ could disturb. And the recombined plan is adopted only if the complete
 objective, with the budget re-optimised and the recourse evaluated exactly,
 strictly improves. The step can therefore leave the solution unchanged but
 cannot worsen it. By Proposition~\ref{prop:certified_region}, where the
-recombined emissions satisfy the certificate the set-partitioning optimum is
+recombined stock draws satisfy the certificate the set-partitioning optimum is
 optimal for the exact objective over the pool, and not merely for the
 linearisation.
 
@@ -1456,18 +1494,18 @@ linearisation.
 \label{alg:ppbrc}
 \KwIn{Scenario set $\mathcal W$ and probabilities $\pi$; routing data; $B^{\mathrm{corp}}$; transfer network $(\mathcal D,\mathcal A^T)$, costs $\kappa$, and capacities $\overline T$.}
 \KwOut{Budget $B^{\mathrm{best}}$, scenario routes $S^{\omega,\mathrm{best}}$, and recourse decisions.}
-Initialise $B^0$ proportionally to expected reference emissions and project onto $\mathcal B$\;
+Initialise $B^0$ proportionally to expected reference demand and project onto $\mathcal B$\;
 \For{$r\leftarrow0,1,\ldots,R-1$}{
   \ForEach{$\omega\in\mathcal W$ \textbf{\emph{(independent, parallelisable)}}}{
     Initialise $\lambda^\omega$ at the midpoint of $[p^{\mathrm{sell}},p^{\mathrm{buy}}]$\;
     \For{$\ell\leftarrow1,\ldots,L$}{
       Improve $S^\omega$ by adaptive large neighbourhood search on
-      $C_{\mathrm{op}}^\omega(S^\omega)+(\lambda^\omega)^\top E^\omega(S^\omega)$\;
-      Solve the recourse dual at $g^\omega=E^\omega(S^\omega)-B^r$ and update $\lambda^\omega$\;
+      $C_{\mathrm{op}}^\omega(S^\omega)+(\lambda^\omega)^\top U^\omega(S^\omega)$\;
+      Solve the recourse dual at $g^\omega=U^\omega(S^\omega)-B^r$ and update $\lambda^\omega$\;
       \lIf{$\lambda^\omega$ is unchanged}{\textbf{break}}
     }
   }
-  Fix $E^{\omega}$ for all $\omega$ and solve \eqref{eq:budget_block_obj}--\eqref{eq:budget_block_domain} exactly for $B^{r+1}$\;
+  Fix $U^{\omega}$ for all $\omega$ and solve \eqref{eq:budget_block_obj}--\eqref{eq:budget_block_domain} exactly for $B^{r+1}$\;
   \lIf{$\|B^{r+1}-B^r\|_1$ is negligible}{\textbf{break}}
 }
 Evaluate $Z(B,S)$ with exact recourse under the complete objective \eqref{eq:ppbrc_true_scenario}\;
@@ -1476,9 +1514,9 @@ Evaluate $Z(B,S)$ with exact recourse under the complete objective \eqref{eq:ppb
 
 Two loops are nested inside the outer coordination loop. The inner loop over
 $\ell$ is the price fixed point of Section~\ref{subsec:price_neighbourhoods}:
-routing and price are alternated at a fixed budget until the price stabilises.
+routing and price are alternated at a fixed allocation until the price stabilises.
 The outer loop over $r$ is the coordination itself, in which the budget is
-re-optimised exactly once scenario emissions are known. PPBRC-core denotes
+re-optimised exactly once scenario stock draws are known. PPBRC-core denotes
 this scheme with a single deterministic start and no diversification;
 complete PPBRC adds a multi-start construction and periodic large removals
 inside the neighbourhood search, and is the variant used unless stated
@@ -1494,8 +1532,8 @@ otherwise.
  arrow/.style={-{Latex[length=2mm]},thick}
 ]
 \node[shared] (init) {Initial routes and shared budget $B^0$};
-\node[scen,below left=10mm and 14mm of init] (route) {Scenario routing subproblems\\$S^\omega\mapsto E^\omega$};
-\node[scen,below=10mm of init] (oracle) {Exact carbon-recourse oracle\\$(t,b,s,\lambda,\mu)^\omega$};
+\node[scen,below left=10mm and 14mm of init] (route) {Scenario routing subproblems\\$S^\omega\mapsto U^\omega$};
+\node[scen,below=10mm of init] (oracle) {Exact rebalancing-recourse oracle\\$(t,b,s,\lambda,\mu)^\omega$};
 \node[scen,below right=10mm and 14mm of init] (neigh) {Price-polyhedral neighbourhoods\\and exact acceptance};
 \node[shared,below=14mm of oracle] (budget) {Central budget--recourse LP\\shared $B$, scenario flows};
 \node[shared,below=of budget] (test) {Stagnation and resource test};
@@ -1525,11 +1563,11 @@ otherwise.
 
 The prices on which this subproblem depends are defined first.
 
-Let $g^\omega=E^\omega(S^\omega)-B$ denote the deficit induced by a pair
+Let $g^\omega=U^\omega(S^\omega)-B$ denote the deficit induced by a pair
 $(B,S^\omega)$. Solving \eqref{eq:recourse_primal} and its dual
 \eqref{eq:recourse_dual} yields a recourse flow $(t^\omega,b^\omega,s^\omega)$
 and a dual pair $(\lambda^\omega,\mu^\omega)$, in which $\lambda_d^\omega$ is
-the marginal cost of emission at depot $d$, confined by
+the marginal cost of stock drawn at depot $d$, confined by
 Proposition~\ref{prop:price_polyhedron} to $[p^{\mathrm{sell}},p^{\mathrm{buy}}]$,
 and $\mu_{dd'}^\omega$ the marginal value of capacity on transfer arc
 $(d,d')$. When the optimal flow is not
@@ -1539,10 +1577,10 @@ and makes reported transfer volumes well defined. The fully pooled regime is
 evaluated through Remark~\ref{rem:canonical_pooling}.
 
 Consider a modification $m$ of a routing plan, with cost change
-$\Delta C_m^\omega$ and emission change $\Delta E_m^\omega$, and define
+$\Delta C_m^\omega$ and stock-draw change $\Delta U_m^\omega$, and define
 \begin{equation}
  L_m^\omega
- :=\Delta C_m^\omega+(\lambda^\omega)^\top\Delta E_m^\omega .
+ :=\Delta C_m^\omega+(\lambda^\omega)^\top\Delta U_m^\omega .
  \label{eq:move_lower_bound}
 \end{equation}
 Proposition~\ref{prop:recourse_subgradient} and the convexity of
@@ -1566,10 +1604,10 @@ current recourse solution.
 \begin{proposition}[Exactness on a certified region]
 \label{prop:certified_region}
 Let $(\lambda^\omega,\mu^\omega)$ be optimal for the recourse problem at
-deficit $g^\omega$, and let $\Delta E_m^\omega$ be the emission change of a
+deficit $g^\omega$, and let $\Delta U_m^\omega$ be the stock-draw change of a
 modification $m$. Suppose that for every depot $d$,
 \begin{equation}
- r_d+\Delta E_{m,d}^\omega
+ r_d+\Delta U_{m,d}^\omega
  \begin{cases}
  \ge0, & \lambda_d^\omega=p^{\mathrm{buy}},\\
  \le0, & \lambda_d^\omega=p^{\mathrm{sell}},\\
@@ -1578,7 +1616,7 @@ modification $m$. Suppose that for every depot $d$,
  \label{eq:certified_region}
 \end{equation}
 Then $(\lambda^\omega,\mu^\omega)$ remains optimal at
-$g^\omega+\Delta E_m^\omega$, and
+$g^\omega+\Delta U_m^\omega$, and
 \begin{equation*}
  \Delta Z_m^\omega=L_m^\omega .
 \end{equation*}
@@ -1588,11 +1626,11 @@ $g^\omega+\Delta E_m^\omega$, and
 Dual feasibility of $(\lambda^\omega,\mu^\omega)$ is a property of the
 prices, frictions and capacities alone and does not involve the right-hand
 side, so it is unaffected by the perturbation. It therefore suffices to
-exhibit a primal solution at $g^\omega+\Delta E_m^\omega$ that is feasible
+exhibit a primal solution at $g^\omega+\Delta U_m^\omega$ that is feasible
 and complementary to it. Keep the internal transfers $t^\omega$ unchanged and
 set the external trades so that depot $d$ has net position
-$r_d+\Delta E_{m,d}^\omega$, taking $b_d=[r_d+\Delta E_{m,d}^\omega]_+$ and
-$s_d=[-(r_d+\Delta E_{m,d}^\omega)]_+$. This satisfies the balance equations
+$r_d+\Delta U_{m,d}^\omega$, taking $b_d=[r_d+\Delta U_{m,d}^\omega]_+$ and
+$s_d=[-(r_d+\Delta U_{m,d}^\omega)]_+$. This satisfies the balance equations
 by construction and respects the transfer capacities, which are untouched.
 For complementarity, a depot may purchase only where
 $\lambda_d^\omega=p^{\mathrm{buy}}$ and sell only where
@@ -1603,9 +1641,9 @@ conditions of Proposition~\ref{prop:complementarity} involve $t^\omega$ and
 $\lambda^\omega$, both unchanged. Hence the pair remains optimal, and
 $\Psi_{\overline T}$ is affine with gradient $\lambda^\omega$ along the
 segment joining the two deficits, giving
-$\Psi_{\overline T}(g^\omega+\Delta E_m^\omega)-\Psi_{\overline T}(g^\omega)
-=(\lambda^\omega)^\top\Delta E_m^\omega$ and therefore
-$\Delta Z_m^\omega=\Delta C_m^\omega+(\lambda^\omega)^\top\Delta E_m^\omega
+$\Psi_{\overline T}(g^\omega+\Delta U_m^\omega)-\Psi_{\overline T}(g^\omega)
+=(\lambda^\omega)^\top\Delta U_m^\omega$ and therefore
+$\Delta Z_m^\omega=\Delta C_m^\omega+(\lambda^\omega)^\top\Delta U_m^\omega
 =L_m^\omega$.
 \end{proof}
 
@@ -1622,11 +1660,11 @@ For a fixed price vector $\lambda^\omega$, the routing subproblem of scenario
 $\omega$ is
 \begin{equation}
  \min_{S^\omega\in\mathcal S^\omega}\;
- C_{\mathrm{op}}^\omega(S^\omega)+(\lambda^\omega)^\top E^\omega(S^\omega),
+ C_{\mathrm{op}}^\omega(S^\omega)+(\lambda^\omega)^\top U^\omega(S^\omega),
  \label{eq:priced_routing_subproblem}
 \end{equation}
 a multi-depot routing problem with capacity, route-duration and eligibility
-restrictions in which emission carries a linear charge that differs by depot.
+restrictions in which the stock drawn carries a linear charge that differs by depot.
 Its objective is the linearisation whose increments are the quantities
 \eqref{eq:move_lower_bound}. By \eqref{eq:move_subgradient_bound}, any
 modification that reduces the true scenario cost also reduces this
@@ -1639,13 +1677,13 @@ Problem \eqref{eq:priced_routing_subproblem} is solved by adaptive large
 neighbourhood search \citep{ropke2006adaptive,pisinger2007general}. The
 removal operators follow the structure of the priced objective. Removing
 customers at random preserves diversification. Removing those whose priced
-contribution is largest directs the search towards emission-intensive
-customers where the depot price is high and towards distant ones where it is
-low, so that a single operator adapts to the prevailing carbon position of
-each depot. Removing geographically related customers allows a coherent
+contribution is largest directs the search towards high-demand customers at
+depots where the price is high and towards distant ones where it is low, so
+that a single operator adapts to the prevailing stock position of each
+depot. Removing geographically related customers allows a coherent
 portion of a route to be rebuilt. Removing customers with more than one
 eligible depot addresses the reassignment specific to this problem: such
-customers are the only ones whose service can be moved between carbon
+customers are the only ones whose service can be moved between depot stock
 accounts, and a search that reaches them only incidentally examines few of
 the reassignments that the price signal makes attractive. Reinsertion uses a
 cheapest-feasible-position rule and a regret rule, the latter being material
@@ -1656,7 +1694,7 @@ simulated-annealing criterion, and every insertion is verified against
 capacity, route duration, fleet availability and depot eligibility.
 
 The price is not fixed throughout. Once the search terminates, the recourse
-dual is re-solved at the resulting emissions and returns an updated
+dual is re-solved at the resulting stock draws and returns an updated
 $\lambda^\omega$, and the search is repeated. This alternation is a
 fixed-point iteration in the price, terminating when $\lambda^\omega$ is
 unchanged or after a prescribed number of repetitions. Solutions are
@@ -1664,11 +1702,11 @@ evaluated for reporting and comparison by the complete cost
 \eqref{eq:ppbrc_true_scenario} with exact recourse; the linearised objective
 governs only the search carried out at a fixed price.
 
-\subsection{The budget subproblem}
+\subsection{The allocation subproblem}
 \label{subsec:budget_recourse_block}
 \label{subsec:ppbrc_properties}
 
-Suppose the route emissions $\widehat E_d^\omega$ are fixed for every scenario. The first-stage budget and the accounting decisions of all scenarios are then determined by the linear programme
+Suppose the stock draws $\widehat U_d^\omega$ are fixed for every scenario. The first-stage allocation and the rebalancing decisions of all scenarios are then determined by the linear programme
 \begin{align}
  \min_{B,t,b,s}\quad
  &\sum_{\omega\in\mathcal W}\pi_\omega\left[
@@ -1678,7 +1716,7 @@ Suppose the route emissions $\widehat E_d^\omega$ are fixed for every scenario. 
  \label{eq:budget_block_obj}\\
  \text{s.t.}\quad
  &B_d+\sum_{(h,d)\in\delta_T^-(d)}t_{hd}^\omega+b_d^\omega
- =\widehat E_d^\omega+\sum_{(d,h)\in\delta_T^+(d)}t_{dh}^\omega+s_d^\omega,
+ =\widehat U_d^\omega+\sum_{(d,h)\in\delta_T^+(d)}t_{dh}^\omega+s_d^\omega,
  &&\forall d,\omega,\label{eq:budget_block_balance}\\
  &\sum_{d\in\mathcal D}B_d=B^{\mathrm{corp}},\qquad
  \underline B_d\le B_d\le\overline B_d,
@@ -1690,41 +1728,41 @@ Suppose the route emissions $\widehat E_d^\omega$ are fixed for every scenario. 
 \end{align}
 The operational cost is constant here and is omitted from \eqref{eq:budget_block_obj}. If several budgets attain the optimum, any of them may be returned; the optimal value, which is what enters the objective, is unaffected.
 
-Let $\nu$ be the multiplier of the corporate budget equality, and let $\alpha_d^L,\alpha_d^U\ge0$ be the multipliers of the lower and upper budget bounds. With the sign convention of Section~\ref{subsec:price_polyhedron}, the KKT condition for $B_d$ is
+Let $\nu$ be the multiplier of the corporate budget equality, and let $\alpha_d^L,\alpha_d^U\ge0$ be the multipliers of the lower and upper allocation bounds. With the sign convention of Section~\ref{subsec:price_polyhedron}, the KKT condition for $B_d$ is
 \begin{equation}
  \sum_{\omega\in\mathcal W}\pi_\omega\lambda_d^\omega
  =\nu-\alpha_d^L+\alpha_d^U.
  \label{eq:expected_price_kkt}
 \end{equation}
-Every depot whose budget lies strictly between its bounds therefore carries the same expected marginal carbon value, while a depot at its lower or upper bound satisfies the corresponding one-sided condition.
+Every depot whose allocation lies strictly between its bounds therefore carries the same expected marginal stock value, while a depot at its lower or upper bound satisfies the corresponding one-sided condition.
 
 The exactness of this step is the one optimality guarantee the method carries,
 and is worth stating precisely.
 
-\begin{proposition}[Exactness of the budget step]
+\begin{proposition}[Exactness of the allocation step]
 \label{prop:ppbrc_budget_exact}
-Fix scenario emissions $\widehat E^\omega$ for all $\omega\in\mathcal W$.
+Fix scenario stock draws $\widehat U^\omega$ for all $\omega\in\mathcal W$.
 Then the optimal value of
 \eqref{eq:budget_block_obj}--\eqref{eq:budget_block_domain} equals
 \begin{equation*}
 \min_{B\in\mathcal B}\ \sum_{\omega\in\mathcal W}\pi_\omega
-\Psi_{\overline T}\!\left(\widehat E^\omega-B\right),
+\Psi_{\overline T}\!\left(\widehat U^\omega-B\right),
 \end{equation*}
-so the budget step returns a first-stage allocation that is globally optimal
-for those emissions, and the expected cost after the step is no larger than
+so the allocation step returns a first-stage allocation that is globally optimal
+for those stock draws, and the expected cost after the step is no larger than
 before it.
 \end{proposition}
 
 \begin{proof}
-For each $\omega$, $\Psi_{\overline T}(\widehat E^\omega-B)$ is by definition
+For each $\omega$, $\Psi_{\overline T}(\widehat U^\omega-B)$ is by definition
 the optimal value of the recourse problem
 \eqref{eq:recourse_primal}--\eqref{eq:recourse_domain} at deficit
-$\widehat E^\omega-B$. Replacing each $\Psi_{\overline T}$ term by that
+$\widehat U^\omega-B$. Replacing each $\Psi_{\overline T}$ term by that
 problem and minimising jointly over $B$ and the recourse variables of all
 scenarios yields exactly
 \eqref{eq:budget_block_obj}--\eqref{eq:budget_block_domain}, since the
 scenarios share no variable other than $B$ and the operating cost is constant
-at fixed emissions. The joint minimisation is a linear programme and is
+at fixed stock draws. The joint minimisation is a linear programme and is
 solved to optimality. Finally, the budget in force before the step, together
 with its recourse decisions, is feasible for that programme, so its value is
 an upper bound on the optimum.
@@ -1747,8 +1785,8 @@ them, and against benchmark methods otherwise.
 
 The accounting components are small. For one scenario the recourse problem
 has $|\mathcal D|$ balance constraints, $|\mathcal A^T|$ internal arcs and
-$2|\mathcal D|$ market arcs, and is a capacitated minimum-cost flow problem.
-The budget problem has $|\mathcal D|$ shared variables and, per scenario,
+$2|\mathcal D|$ external-settlement arcs, and is a capacitated minimum-cost flow problem.
+The allocation problem has $|\mathcal D|$ shared variables and, per scenario,
 $|\mathcal A^T|+2|\mathcal D|$ accounting variables subject to
 $|\mathcal D|$ balance constraints, so its size grows linearly in
 $|\mathcal W|(|\mathcal A^T|+|\mathcal D|)$. The computational effort is
@@ -1756,10 +1794,10 @@ dominated by the routing search rather than by either linear programme.
 
 Two structural features govern the cost of that search. Distances are
 precomputed, and only the routes affected by a candidate modification are
-re-evaluated, so the load-dependent emission of an unaffected route is never
-recomputed. At a fixed budget the scenario routing subproblems share no
+re-evaluated, so the load-dependent fuel cost of an unaffected route is never
+recomputed. At a fixed allocation the scenario routing subproblems share no
 variable and may therefore be solved in parallel, with synchronisation
-required only before the budget step; the computational study reports this
+required only before the allocation step; the computational study reports this
 structural independence separately from realised speedup, which depends on
 the execution environment.
 
@@ -1820,15 +1858,15 @@ where $Z^\omega$ is a depot-level Gaussian factor with equicorrelation $\rho$, a
 
 The corporate budget is parameterised as
 \begin{equation}
- B^{\mathrm{corp}}=\gamma_B E^0,
+ B^{\mathrm{corp}}=\gamma_B R^0,
  \label{eq:budget_stringency}
 \end{equation}
-where $E^0$ is obtained from a deterministic home-depot angle-sweep construction under base demand.  The reference allocation is proportional to depot reference emissions, with lower and upper responsibility bounds equal to $45\%$ and $160\%$ of that allocation.  The internal transfer graph is a bidirectional ring; the five-depot classes include two additional bidirectional chords.  Arc frictions are directionally asymmetric, and capacities are scaled relative to the reference emissions of their incident depots.
+where $R^0$ is obtained from a deterministic home-depot angle-sweep construction under base demand.  The reference allocation is proportional to depot reference demand, with lower and upper responsibility bounds equal to $45\%$ and $160\%$ of that allocation.  The internal transfer graph is a bidirectional ring; the five-depot classes include two additional bidirectional chords.  Arc frictions are directionally asymmetric, and capacities are scaled relative to the reference demand of their incident depots.
 
 \subsubsection{Parameter settings}
 \label{subsubsec:parameter_settings}
 
-Table~\ref{tab:parameter_values} lists the value of every parameter of the instance generator and of the carbon-account layer.  Values are held at these settings throughout, except for the factors that a given experiment deliberately varies: the budget factor $\gamma_B$ and transfer-capacity scale $\tau$ define the three carbon-network strata of the comparison suite, and the four factors of the sensitivity suite take the two levels listed in the final block.
+Table~\ref{tab:parameter_values} lists the value of every parameter of the instance generator and of the stock-account layer.  Values are held at these settings throughout, except for the factors that a given experiment deliberately varies: the budget factor $\gamma_B$ and transfer-capacity scale $\tau$ define the three carbon-network strata of the comparison suite, and the four factors of the sensitivity suite take the two levels listed in the final block.
 
 \begin{table}[!htbp]
 \centering
@@ -1870,7 +1908,7 @@ $p^{\mathrm{buy}},p^{\mathrm{sell}}$ & External purchase and sale prices & $9$, 
 \multicolumn{3}{@{}l}{\textit{Internal transfer network}}\\
 $\mathcal A^T$ & Topology & bidirectional ring ($+2$ chords when $|\mathcal D|=5$) \\
 $\kappa_{dd'}$ & Arc friction & $(0.15+0.35\,\tilde d_{dd'})(1\pm0.15)$, $\tilde d$ normalised depot distance \\
-$\overline T_{dd'}$ & Arc capacity & $\tau\cdot\tfrac12(E^0_d+E^0_{d'})$ \\
+$\overline T_{dd'}$ & Arc capacity & $\tau\cdot\tfrac12(R^0_d+R^0_{d'})$ \\
 $\tau$ & Transfer-capacity scale & $1.00$ (baseline) \\
 \midrule
 \multicolumn{3}{@{}l}{\textit{Factors varied by design}}\\
@@ -1887,7 +1925,7 @@ $\tau$ & Sensitivity factor: transfer-capacity scale & $0.60$ or $1.40$ \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:frozen_data_suites} summarises the resulting suites.  For E3, the 20-, 50-, and 100-scenario training samples are nested prefixes of the same 100-scenario bank.  The validation bank is used only to select the training sample size and stopping settings.  The test bank is sealed until the algorithm, benchmark methods, and parameters have been fixed.  Evaluating a first-stage budget on a held-out scenario requires re-solving that scenario's routing problem, so the evaluation banks are sized for what can be solved rather than for nominal precision: 100 test scenarios give a standard error of one tenth of the scenario standard deviation, which is sufficient to separate the policies considered here.  A separate heavy-tailed regime-switching bank is used only for supplementary distribution-shift analysis and does not replace the main same-distribution test bank.
+Table~\ref{tab:frozen_data_suites} summarises the resulting suites.  For E3, the 20-, 50-, and 100-scenario training samples are nested prefixes of the same 100-scenario bank.  The validation bank is used only to select the training sample size and stopping settings.  The test bank is sealed until the algorithm, benchmark methods, and parameters have been fixed.  Evaluating a first-stage allocation on a held-out scenario requires re-solving that scenario's routing problem, so the evaluation banks are sized for what can be solved rather than for nominal precision: 100 test scenarios give a standard error of one tenth of the scenario standard deviation, which is sufficient to separate the policies considered here.  A separate heavy-tailed regime-switching bank is used only for supplementary distribution-shift analysis and does not replace the main same-distribution test bank.
 
 \begin{table}[!htbp]
 \centering
@@ -1908,7 +1946,7 @@ Public benchmark (Section~\ref{subsec:e5_public_benchmark}) & 33/11 & 50--360 & 
 \end{tabular}
 \end{table}
 
-The comparison suite contains three pre-specified carbon-network strata for every size class: a tight-budget/low-capacity stratum, a balanced stratum, and a loose-budget/high-capacity stratum.  The sensitivity suite uses a replicated $2^4$ design over demand coefficient of variation ($0.15$ or $0.35$), cross-depot correlation ($-0.25$ or $0.55$), boundary-customer share ($0.10$ or $0.30$), and transfer-capacity scale ($0.60$ or $1.40$).  Every generated instance is retained; mechanism diagnostics describe the resulting strata but are never used to remove an unfavourable instance.  The public-benchmark experiment provides external validity using the Cordeau MDVRP instances: all 33 are used for an unmodified deterministic routing regression, while 11 pre-specified instances spanning 50--360 customers and 2--9 depots additionally receive the stochastic-demand and carbon-account overlay.  The original public coordinates, depots, mean demands, capacities, route-duration limits, and vehicle limits are never perturbed or filtered.
+The comparison suite contains three pre-specified carbon-network strata for every size class: a tight-budget/low-capacity stratum, a balanced stratum, and a loose-budget/high-capacity stratum.  The sensitivity suite uses a replicated $2^4$ design over demand coefficient of variation ($0.15$ or $0.35$), cross-depot correlation ($-0.25$ or $0.55$), boundary-customer share ($0.10$ or $0.30$), and transfer-capacity scale ($0.60$ or $1.40$).  Every generated instance is retained; mechanism diagnostics describe the resulting strata but are never used to remove an unfavourable instance.  The public-benchmark experiment provides external validity using the Cordeau MDVRP instances: all 33 are used for an unmodified deterministic routing regression, while 11 pre-specified instances spanning 50--360 customers and 2--9 depots additionally receive the stochastic-demand and stock-account overlay.  The original public coordinates, depots, mean demands, capacities, route-duration limits, and vehicle limits are never perturbed or filtered.
 
 A generated instance is only informative about the carbon mechanism if that
 mechanism is actually active on it: an instance whose depots never fall into
@@ -1950,7 +1988,7 @@ the complete method.
 \item \textbf{SAA-ALNS.} A sample-average-approximation benchmark: reactive destroy--repair search with random, worst, and related removals, greedy and regret-2 repair, simulated-annealing acceptance, and periodic exact optimisation of the shared budget.  It carries no price-polyhedral guidance.
 \item \textbf{PH-ALNS.} A progressive-hedging benchmark with scenario-specific budget copies, exact recourse subgradients in projected proximal updates, adaptive penalty balancing, scenario-level ALNS, and exact feasible nonanticipative recovery.  Because progressive hedging is not exact for an integer routing problem, both its recovered feasible objective and its budget-consensus residual are reported.
 \item \textbf{Cost-only coordination.} The proposed block architecture with depot prices and congestion multipliers removed.
-\item \textbf{Price-guided routing only.} The price-polyhedral routing subproblem with the first-stage budget held at its initial value.
+\item \textbf{Price-guided routing only.} The price-polyhedral routing subproblem with the first-stage allocation held at its initial value.
 \item \textbf{PPBRC-core.} The single-trajectory price-polyhedral routing and exact budget-coordination scheme, without diversification.
 \item \textbf{PPBRC without recombination.} Complete PPBRC with the final set-partitioning step switched off.
 \item \textbf{PPBRC.} PPBRC-core followed by bounded destroy--repair diversification and a final recombination of the pooled routes.
@@ -1966,7 +2004,7 @@ reference policies for the first-stage decision.
 All methods are run under identical hardware, wall-clock limits, training
 scenarios, deterministic reference starts, and the five pre-specified search
 seeds $\{91001,\dots,91005\}$.  The benchmark methods receive the same exact
-load-dependent route evaluator, carbon-recourse oracle, and shared-budget
+load-dependent route evaluator, rebalancing-recourse oracle, and shared-budget
 feasibility recovery as the proposed method, so that differences in
 performance reflect search and coordination rather than differences in
 evaluation.  PPBRC-core and complete PPBRC receive the same total time limit, so that the
@@ -1974,7 +2012,7 @@ comparison between them isolates the effect of diversification at equal
 computational effort.
 
 Every reported solution is evaluated with the complete objective
-\eqref{eq:ppbrc_true_scenario} and exact accounting recourse, never with the
+\eqref{eq:ppbrc_true_scenario} and exact rebalancing recourse, never with the
 surrogate used inside the search.  For each method we report the best and mean
 objective over the search seeds, its standard deviation, the wall-clock time,
 and the paired difference against each competing method on the same instance
@@ -2001,7 +2039,7 @@ solver is used, so the exact-solution results can be reproduced without a
 licence.  The exact solver is allowed $1800$~s per instance in
 Section~\ref{subsec:e1_verification}; in every other experiment all methods
 receive an identical per-instance wall-clock budget, stated with that
-experiment.  Because the scenario subproblems at a fixed budget are
+experiment.  Because the scenario subproblems at a fixed allocation are
 independent, the implementation solves them in parallel, and all reported
 times are wall-clock times for the complete run.
 
@@ -2010,7 +2048,7 @@ times are wall-clock times for the complete run.
 
 Every instance of the verification suite is solved with the deterministic-equivalent formulation of Section~\ref{subsec:mathematical_formulation} under a $1800$~s limit.  The suite is deliberately small: in a preliminary run at $90$~s, optimality was proved only at $|\mathcal C|=10$ with few scenarios and never at $|\mathcal C|\ge15$, so a suite reaching further would report bounds rather than optima and could not support the comparison this section is for.  Sizes are therefore $|\mathcal C|\in\{8,12,16\}$ with at most six scenarios.  Where optimality is nonetheless not proved within the limit, the cell is reported as such rather than omitted, and the heuristic is assessed against the best valid bound; the proportion of cells in which a proven optimum is available is reported with the results, since it determines how much of the comparison rests on optima rather than on bounds. Before these main runs, tiny multi-vehicle instances are cross-checked with two independent exact formulations: the direct arc--payload deterministic-equivalent MILP in Section~\ref{subsec:mathematical_formulation}, and an exact route-plan extensive form obtained by enumerating every feasible customer assignment, vehicle partition, and route sequence in each scenario.  Agreement between these formulations isolates modelling and indexing errors that would not be detected by re-evaluating a heuristic solution with the same route code.
 
-The verification script independently checks customer coverage, route continuity, the number of active vehicles, capacity, route duration, payload conservation, depot emissions, account balance, transfer capacity, first-stage non-anticipativity, and the absence of simultaneous buying and selling above tolerance. For every recourse call it also checks primal--dual equality, price bounds, and complementary conditions on unused, interior, and saturated transfer arcs.
+The verification script independently checks customer coverage, route continuity, the number of active vehicles, capacity, route duration, payload conservation, depot stock draws, account balance, transfer capacity, first-stage non-anticipativity, and the absence of simultaneous buying and selling above tolerance. For every recourse call it also checks primal--dual equality, price bounds, and complementary conditions on unused, interior, and saturated transfer arcs.
 
 Table~\ref{tab:e1_verification} reports, for each size class, the status
 returned by the solver, the objective attained by the proposed method, the
@@ -2058,7 +2096,7 @@ capacity rather than of instance identity.
 
 Table~\ref{tab:e2_external} reports the external comparison and
 Table~\ref{tab:e2_internal} the mechanism attribution. The latter also
-reports the proportion of emission changes for which
+reports the proportion of stock-draw changes for which
 Proposition~\ref{prop:certified_region} certifies that the linearised
 objective coincides with the exact one, which measures how much of the search
 is provably operating on the true objective rather than on a surrogate.  Alongside the
@@ -2192,18 +2230,18 @@ Training scenarios & Policy & Mean test cost & Difference vs.\ reference-emissio
 \label{subsec:e4_recourse_interaction}
 
 The model provides two distinct recourse channels: operational recourse, which
-reassigns boundary customers and reconstructs routes, and accounting recourse,
+reassigns boundary customers and reconstructs routes, and rebalancing recourse,
 which moves carbon credit through the internal transfer network.  This
 experiment measures the value of each channel, and of their joint use, and
 establishes how that value depends on the operating environment.
 
 Each instance is solved under four regimes obtained by enabling or disabling
 the two channels.  Operational recourse is disabled by fixing every customer
-to its home depot; accounting recourse is disabled by setting all internal
+to its home depot; rebalancing recourse is disabled by setting all internal
 transfer capacities to zero.  External trading remains available throughout,
 so that complete recourse is preserved and the four regimes remain comparable.
 Let $Z_{ab}$ denote the expected cost, where $a$ and $b$ indicate whether
-operational and accounting recourse are available.  Define
+operational and rebalancing recourse are available.  Define
 \begin{equation}
  V_{\mathrm{op}}=Z_{00}-Z_{10},\qquad
  V_{\mathrm{acc}}=Z_{00}-Z_{01},\qquad
@@ -2345,10 +2383,10 @@ Depot eligibility & unrestricted across all public depots, as in the classical M
 Demand uncertainty & \eqref{eq:scenario_generator} applied to the published means, with $\sigma=0.25$, $\sigma_\varepsilon=0.10$, $\rho=0.25$; a draw is resampled only if it exceeds vehicle capacity \\
 Scenario banks & 50 optimisation, 200 validation, 800 sealed test scenarios, from disjoint random streams \\
 Emissions & load-dependent model of \citet{bektas2011pollution} with $\theta=1$, $\rho_k^0=0.9$, $\rho_k^Q=1.5$ \\
-Reference emission $E^0$ & emission of the published best-known route under mean demand; where the published solution file cannot be parsed, a fully specified nearest-depot angular-sweep construction is used instead and is flagged as such, never reported as a best-known route \\
-Corporate budget & $B^{\mathrm{corp}}=\gamma_B E^0$ with $\gamma_B\in\{0.90,1.00,1.10\}$; depot bounds at $0.45$ and $1.60$ times the emission-proportional allocation, as in the generated instances \\
+Reference emission $R^0$ & emission of the published best-known route under mean demand; where the published solution file cannot be parsed, a fully specified nearest-depot angular-sweep construction is used instead and is flagged as such, never reported as a best-known route \\
+Corporate budget & $B^{\mathrm{corp}}=\gamma_B R^0$ with $\gamma_B\in\{0.90,1.00,1.10\}$; depot bounds at $0.45$ and $1.60$ times the emission-proportional allocation, as in the generated instances \\
 Transfer network & bidirected Euclidean minimum spanning tree over the public depot coordinates, augmented by each depot's nearest omitted neighbour \\
-Transfer friction and capacity & $\kappa_{dd'}=0.15+0.35\,\tilde d_{dd'}$ in normalised depot distance; $\overline T_{dd'}=\tau\cdot\tfrac12(E^0_d+E^0_{d'})$ with $\tau\in\{0.60,1.00,1.40\}$ \\
+Transfer friction and capacity & $\kappa_{dd'}=0.15+0.35\,\tilde d_{dd'}$ in normalised depot distance; $\overline T_{dd'}=\tau\cdot\tfrac12(R^0_d+R^0_{d'})$ with $\tau\in\{0.60,1.00,1.40\}$ \\
 External prices & $p^{\mathrm{buy}}=9$, $p^{\mathrm{sell}}=2$, as in the generated instances \\
 \bottomrule
 \end{tabular}
@@ -2373,14 +2411,14 @@ used only to verify that the ordering of the methods is not specific to a
 single carbon-network setting.  PPBRC, PPBRC-core, SAA-ALNS, and PH-ALNS are compared
 under the same time and seed protocol used in the comparison experiment. The original MDVRP BKS is
 not used to compute an optimality gap for this augmented objective because the
-uncertainty, emissions, and accounting recourse change the problem.
+uncertainty, emissions, and rebalancing recourse change the problem.
 Table~\ref{tab:e5b_public_cbar} reports the four methods on the augmented
 public instances, on the training bank and on the sealed test bank, with the
 standard error of the latter.
 
 \begin{table}[!htbp]
 \centering
-\caption{Algorithm comparison on public Cordeau instances with the carbon-account overlay (E5b).}
+\caption{Algorithm comparison on public Cordeau instances with the stock-account overlay (E5b).}
 \label{tab:e5b_public_cbar}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrrrr}
@@ -2427,7 +2465,7 @@ another within that design; it does not establish a universal sign for $I$.
 Within the public-benchmark experiment
 (Section~\ref{subsec:e5_public_benchmark}), the classical regression
 establishes compatibility with a recognised routing benchmark but validates
-nothing about the carbon-account extension, while the augmented instances
+nothing about the stock-account extension, while the augmented instances
 supply external spatial and capacity structure for the complete model and
 cannot be compared with the published best-known solutions, whose objective
 and information structure differ from ours.
@@ -2465,14 +2503,14 @@ This study introduces the CBAR-MDVRP, a two-stage stochastic routing model in
 which headquarters delegates carbon budgets to depots before demand is
 observed and coordinates two forms of recourse once it is realised. The
 formulation separates physical recourse, through customer--depot reassignment
-and route reconstruction, from accounting recourse, through a
+and route reconstruction, from rebalancing recourse, through a
 capacity-constrained internal carbon-credit network and residual external
 trading. The separation is what makes the first-stage allocation
 economically meaningful: were credits transferable without friction after
 demand is known, the allocation would be an accounting convention with no
 operational content.
 
-For fixed route emissions the carbon-account component is a capacitated
+For fixed stock draws the stock-account component is a capacitated
 minimum-cost transshipment problem. Its dual defines an extended price
 polyhedron whose depot prices measure marginal recourse costs and whose
 capacity multipliers identify congested transfer channels. This yields exact
@@ -2480,13 +2518,13 @@ local information about the continuous recourse -- bounds on the prices,
 complementarity conditions distinguishing unused, interior and saturated
 channels, and a subgradient inequality bounding the effect of a routing
 change from below -- without convexifying the integer routing problem. The
-solution method exploits the resulting asymmetry: the budget subproblem is
-solved exactly, because the recourse value is convex in the budget at fixed
+solution method exploits the resulting asymmetry: the allocation subproblem is
+solved exactly, because the recourse value is convex in the allocation at fixed
 emissions, whereas the routing subproblem is addressed heuristically because
 it is $\mathcal{NP}$-hard. The guarantee the method carries is accordingly
-confined to the budget step, which by
+confined to the allocation step, which by
 Proposition~\ref{prop:ppbrc_budget_exact} returns a globally optimal
-allocation for the emissions it is given.
+allocation for the stock draws it is given.
 
 Three implications for practice follow from the structure rather than from
 any particular instance. First, the depot price $\lambda_d$ is an
@@ -2542,9 +2580,9 @@ on which the present formulation rests.
 \label{app:ppbrc_details}
 
 \paragraph{Initial routes and initial budget}
-Initial routes are built by cheapest-feasible insertion under capacity and route-duration constraints, opening a vehicle when no feasible insertion exists; complete PPBRC repeats this construction from several random customer orders and retains the best. Route improvement is left to the neighbourhood search rather than to a separate deterministic pass. The initial budget is proportional to expected reference emissions,
+Initial routes are built by cheapest-feasible insertion under capacity and route-duration constraints, opening a vehicle when no feasible insertion exists; complete PPBRC repeats this construction from several random customer orders and retains the best. Route improvement is left to the neighbourhood search rather than to a separate deterministic pass. The initial budget is proportional to expected reference demand,
 \[
- B_d^0=B^{\mathrm{corp}}\frac{\sum_\omega\pi_\omega E_d^{0,\omega}}{\sum_{h\in\mathcal D}\sum_\omega\pi_\omega E_h^{0,\omega}},
+ B_d^0=B^{\mathrm{corp}}\frac{\sum_\omega\pi_\omega U_d^{0,\omega}}{\sum_{h\in\mathcal D}\sum_\omega\pi_\omega U_h^{0,\omega}},
 \]
 then projected onto the bounded simplex defined by \eqref{eq:budget_total}--\eqref{eq:budget_bounds}.
 
@@ -2553,7 +2591,7 @@ A candidate is evaluated by recomputing the affected routes, so that the change 
 
 \paragraph{Exactness certification}
 After each price refit the implementation evaluates
-\eqref{eq:certified_region} against the emission change produced by the
+\eqref{eq:certified_region} against the stock-draw change produced by the
 preceding round of search, at a cost of one comparison per depot. The test
 gates no decision: a certified change is one whose linearised and exact
 values are known to agree, and an uncertified change is handled exactly as
@@ -2582,10 +2620,10 @@ Base demands are positive lognormal draws with depot-specific scales.  Optimisat
 For the stochastic-value suite, the training samples of size 20, 50, and 100 are nested prefixes of one bank.  This construction attributes changes in performance to sample size rather than to different random draws.  The validation bank may be inspected for selecting the sample size and stopping settings.  The sealed test bank is evaluated only after all algorithmic choices have been fixed.  Exact row overlap among training, validation, and test banks is required to be zero.
 
 \paragraph{Carbon parameters and transfer network}
-The reference emission $E^0$ is obtained from a deterministic home-depot angle-sweep construction under base demand, evaluated with the load-dependent fuel-consumption model of \citet{bektas2011pollution}.  It serves only as a scale: the corporate budget follows from \eqref{eq:budget_stringency}, the depot responsibility bounds are proportional to the emission-proportional allocation, and each transfer arc's capacity is proportional to the mean reference emission of the two depots it joins.  Using a construction rather than an optimised solution keeps the scale independent of the algorithm under test.  The topology, the friction rule, and every constant are given in Table~\ref{tab:parameter_values}; none is recalibrated after instance performance is observed.
+The reference emission $R^0$ is obtained from a deterministic home-depot angle-sweep construction under base demand, evaluated with the load-dependent fuel-consumption model of \citet{bektas2011pollution}.  It serves only as a scale: the corporate budget follows from \eqref{eq:budget_stringency}, the depot responsibility bounds are proportional to the emission-proportional allocation, and each transfer arc's capacity is proportional to the mean reference emission of the two depots it joins.  Using a construction rather than an optimised solution keeps the scale independent of the algorithm under test.  The topology, the friction rule, and every constant are given in Table~\ref{tab:parameter_values}; none is recalibrated after instance performance is observed.
 
 \paragraph{Validation protocol}
-Every instance is checked before it is used, not after algorithm performance has been observed.  The checks cover dimensional consistency with the requested factor settings; positivity of coordinates, demands, and capacities; individual-vehicle feasibility of every scenario demand; fleet capacity slack under mean demand; feasibility of the depot budget bounds relative to the corporate budget; and separation of the random streams used for geometry and for the training, validation, test, and distribution-shift draws, so that no draw is reused across roles.  An instance failing any check is regenerated; it is never silently dropped after results are known.  Section~\ref{app:verification_checklist} describes the corresponding checks applied to every reported solution.  The generation code, the full instance set, and the random seeds needed to reproduce every draw are available in the repository accompanying this paper.
+Every instance is checked before it is used, not after algorithm performance has been observed.  The checks cover dimensional consistency with the requested factor settings; positivity of coordinates, demands, and capacities; individual-vehicle feasibility of every scenario demand; fleet capacity slack under mean demand; feasibility of the depot allocation bounds relative to the corporate budget; and separation of the random streams used for geometry and for the training, validation, test, and distribution-shift draws, so that no draw is reused across roles.  An instance failing any check is regenerated; it is never silently dropped after results are known.  Section~\ref{app:verification_checklist} describes the corresponding checks applied to every reported solution.  The generation code, the full instance set, and the random seeds needed to reproduce every draw are available in the repository accompanying this paper.
 
 \section{Verification checklist}
 \label{app:verification_checklist}
