@@ -57,14 +57,15 @@ class RoutePool:
         m = ppbrc.route_metrics(self.inst, depot, route, self.demand)
         if not m["feasible"]:
             return
-        self._routes[key] = (m["distance"], m["emission"])
+        load = sum(self.demand[i] for i in route)
+        self._routes[key] = (m["distance"], m["emission"], load)
 
     def __len__(self) -> int:
         return len(self._routes)
 
     def columns(self):
-        for (depot, route), (dist, emis) in self._routes.items():
-            yield depot, list(route), dist, emis
+        for (depot, route), (dist, emis, load) in self._routes.items():
+            yield depot, list(route), dist, emis, load
 
 
 def recombine(inst: Instance, demand: dict[int, float], pool: RoutePool,
@@ -84,14 +85,15 @@ def recombine(inst: Instance, demand: dict[int, float], pool: RoutePool,
     prob = pulp.LpProblem("route_recombination", pulp.LpMinimize)
     x = [pulp.LpVariable(f"x_{k}", cat="Binary") for k in range(len(cols))]
 
+    ec = getattr(inst, "emission_cost", 0.0)
     prob += pulp.lpSum(
-        (dist + lam.get(depot, 0.0) * emis) * x[k]
-        for k, (depot, route, dist, emis) in enumerate(cols)
+        (dist + ec * emis + lam.get(depot, 0.0) * load) * x[k]
+        for k, (depot, route, dist, emis, load) in enumerate(cols)
     )
 
     covering = {i: [] for i in customers}
     by_depot: dict[int, list] = {d["idx"]: [] for d in inst.depots}
-    for k, (depot, route, _dist, _emis) in enumerate(cols):
+    for k, (depot, route, _dist, _emis, _load) in enumerate(cols):
         by_depot[depot].append(x[k])
         for i in route:
             covering[i].append(x[k])
@@ -110,7 +112,7 @@ def recombine(inst: Instance, demand: dict[int, float], pool: RoutePool,
         return None
 
     sol = ppbrc.Solution(inst, demand)
-    for k, (depot, route, _dist, _emis) in enumerate(cols):
+    for k, (depot, route, _dist, _emis, _load) in enumerate(cols):
         if x[k].value() is not None and x[k].value() > 0.5:
             sol.routes[depot].append(list(route))
     if sum(len(r) for rs in sol.routes.values() for r in rs) != len(customers):

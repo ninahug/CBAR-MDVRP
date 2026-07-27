@@ -43,16 +43,16 @@ def build_micro_instance(n_customers=5, n_depots=2, n_scenarios=2, seed=777) -> 
     scenarios = demand_mod.scenario_generator(
         customers, n_depots, n_scenarios, seed + 1,
         0.25, 0.10, 0.25, geometry.VEHICLE_CAPACITY)
-    E0 = carbon.reference_emission_per_depot(depots, customers)
-    B_corp, alloc, bounds = carbon.corporate_budget(E0, 1.0)
+    R0 = carbon.reference_demand_per_depot(depots, customers)
+    B_corp, alloc, bounds = carbon.corporate_stock(R0, 1.0)
     adjacency = geometry.ring_adjacency(n_depots)
-    arcs = network.build_transfer_network(depots, adjacency, 1.0, E0)
+    arcs = network.build_transfer_network(depots, adjacency, 1.0, R0)
     return {
         "name": "e1_tiny_crosscheck", "suite": "E1-tiny", "n_customers": n_customers, "n_depots": n_depots,
         "depots": [vars(d) for d in depots],
         "customers": [{**vars(c), "eligible_depots": list(c.eligible_depots)} for c in customers],
         "transfer_arcs": arcs,
-        "reference_emission": {str(k): v for k, v in E0.items()},
+        "reference_demand": {str(k): v for k, v in R0.items()},
         "corporate_budget": B_corp,
         "depot_budget_allocation": {str(k): v for k, v in alloc.items()},
         "depot_budget_bounds": {str(k): list(v) for k, v in bounds.items()},

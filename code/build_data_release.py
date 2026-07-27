@@ -35,7 +35,17 @@ VALID_BASE = 3_000_000
 TEST_BASE = 4_000_000
 SHIFT_BASE = 5_000_000
 
-PRICES = {"buy": 9.0, "sell": 2.0}  # tex, subsec:experimental_setup
+# Emergency supply and salvage, per unit of demand. The spread is the
+# newsvendor asymmetry: covering a shortage costs more than holding a
+# surplus recovers. Scaled so neither term dominates routing: mean base
+# demand is 12 and a route of ten customers costs on the order of 30
+# distance units, so operating cost is roughly 0.25 per unit of demand.
+PRICES = {"buy": 2.0, "sell": 0.5}
+
+# Load-dependent emission priced as an operating cost, following the
+# pollution-routing model. It is a cost component, not the allocated
+# resource.
+EMISSION_COST = 0.1
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -78,10 +88,10 @@ def build_instance(spec: SuiteInstanceSpec) -> dict:
             spec.eval_banks["shift"], SHIFT_BASE, student_t=True,
             regime_prob=0.05, regime_multiplier=1.5)
 
-    E0 = carbon.reference_emission_per_depot(depots, customers)
-    B_corp, alloc, bounds = carbon.corporate_budget(E0, spec.budget_factor)
+    R0 = carbon.reference_demand_per_depot(depots, customers)
+    B_corp, alloc, bounds = carbon.corporate_stock(R0, spec.budget_factor)
     adjacency = geometry.ring_adjacency(n_depots)
-    arcs = network.build_transfer_network(depots, adjacency, spec.capacity_scale, E0)
+    arcs = network.build_transfer_network(depots, adjacency, spec.capacity_scale, R0)
 
     return {
         "benchmark_version": "CBAR-MDVRP-DATA-v1.0",
@@ -110,7 +120,8 @@ def build_instance(spec: SuiteInstanceSpec) -> dict:
             {**vars(c), "eligible_depots": list(c.eligible_depots)} for c in customers
         ],
         "transfer_arcs": arcs,
-        "reference_emission": {str(k): v for k, v in E0.items()},
+        "reference_demand": {str(k): v for k, v in R0.items()},
+        "emission_cost": EMISSION_COST,
         "corporate_budget": B_corp,
         "depot_budget_allocation": {str(k): v for k, v in alloc.items()},
         "depot_budget_bounds": {str(k): list(v) for k, v in bounds.items()},

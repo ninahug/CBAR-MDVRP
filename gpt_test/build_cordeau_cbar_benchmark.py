@@ -32,9 +32,9 @@ import numpy as np
 INSTANCE_URL = "https://neo.lcc.uma.es/vrp/wp-content/data/instances/cordeau/C-mdvrp.zip"
 SOLUTION_URL = "https://neo.lcc.uma.es/vrp/wp-content/data/instances/cordeau/C-mdvrp-sol.zip"
 SELECTED_E5B = ["p01", "p02", "p03", "p12", "p04", "p05", "p06", "p07", "p15", "p18", "p21"]
-# Relative to the reference route's emission, which is not optimised;
-# factors near 1.00 leave the budget slack. See suite_config.py.
-BUDGET_FACTORS = [0.65, 0.75, 0.85]
+# Service-cover factors against expected total demand; 1.00 stocks the
+# network to its mean requirement. See suite_config.py.
+BUDGET_FACTORS = [0.90, 1.00, 1.10]
 CAPACITY_SCALES = [0.60, 1.00, 1.40]
 P_BUY, P_SELL = 9.0, 2.0
 TRAIN_N, VALID_N, TEST_N = 50, 200, 800

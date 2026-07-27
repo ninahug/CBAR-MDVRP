@@ -21,7 +21,7 @@ ASYMMETRY = 0.15  # ASSUMPTION: see module docstring
 
 
 def build_transfer_network(depots, adjacency: list[tuple[int, int]],
-                            capacity_scale: float, E0_by_depot: dict) -> list[dict]:
+                            capacity_scale: float, ref_by_depot: dict) -> list[dict]:
     if not adjacency:
         return []
     dist = {}
@@ -36,8 +36,8 @@ def build_transfer_network(depots, adjacency: list[tuple[int, int]],
     for (a, b) in adjacency:
         d_ab = dist[(a, b)]
         base_kappa = FRICTION_BASE + FRICTION_SLOPE * d_ab / scale
-        mean_E0 = 0.5 * (E0_by_depot[a] + E0_by_depot[b])
-        cap = capacity_scale * mean_E0
+        mean_ref = 0.5 * (ref_by_depot[a] + ref_by_depot[b])
+        cap = capacity_scale * mean_ref
         arcs.append({"from": a, "to": b, "distance": d_ab,
                       "friction": base_kappa * (1 + ASYMMETRY), "capacity": cap})
         arcs.append({"from": b, "to": a, "distance": d_ab,

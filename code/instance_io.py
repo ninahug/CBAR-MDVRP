@@ -38,7 +38,8 @@ class Instance:
         self.depots = raw["depots"]              # list of dicts: idx,x,y,capacity,n_vehicles,max_duration
         self.customers = raw["customers"]        # list of dicts: idx,x,y,service,base_demand,home_depot,eligible_depots
         self.transfer_arcs = raw.get("transfer_arcs", [])
-        self.reference_emission = {int(k): v for k, v in raw.get("reference_emission", {}).items()}
+        self.reference_demand = {int(k): v for k, v in raw.get("reference_demand", {}).items()}
+        self.emission_cost = raw.get("emission_cost", 0.0)
         self.corporate_budget = raw.get("corporate_budget")
         self.depot_budget_allocation = {int(k): v for k, v in raw.get("depot_budget_allocation", {}).items()}
         self.depot_budget_bounds = {int(k): tuple(v) for k, v in raw.get("depot_budget_bounds", {}).items()}

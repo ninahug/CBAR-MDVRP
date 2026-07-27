@@ -96,6 +96,11 @@ def build_and_solve(inst: Instance, scenarios: list[dict], time_limit: float = 1
         pi[w] * (
             pulp.lpSum(F_k * a[k, w] for k in K)
             + pulp.lpSum(dist(inst, u, v) * x[u, v, k, w] for k in K for (u, v) in arcs_k[k])
+            + inst.emission_cost * pulp.lpSum(
+                inst.theta * dist(inst, u, v) * (
+                    inst.rho_empty * x[u, v, k, w]
+                    + (inst.rho_full - inst.rho_empty) / inst.vehicles[k].capacity * f[u, v, k, w])
+                for k in K for (u, v) in arcs_k[k])
             + pulp.lpSum(kappa[uv] * t[uv[0], uv[1], w] for uv in arc_keys)
             + p_buy * pulp.lpSum(b[d, w] for d in D)
             - p_sell * pulp.lpSum(s[d, w] for d in D)
@@ -158,15 +163,11 @@ def build_and_solve(inst: Instance, scenarios: list[dict], time_limit: float = 1
             for i in Ck[k]:
                 prob += f[i, r, k, w] == 0, f"c19b_{i}_{k}_{w}"
 
-        # c20: emission charged to depot d aggregates over every vehicle stationed there
+        # c20: the stock consumed at depot d is the demand assigned to it.
         for d in D:
-            prob += (E[d, w] == pulp.lpSum(
-                inst.theta * dist(inst, u, v) * (
-                    inst.rho_empty * x[u, v, k, w]
-                    + (inst.rho_full - inst.rho_empty) / inst.vehicles[k].capacity * f[u, v, k, w]
-                )
-                for k in vehicles_of_depot[d] for (u, v) in arcs_k[k]
-            ), f"c20_{d}_{w}")
+            prob += (E[d, w] == pulp.lpSum(qw[i] * y[i, d, w]
+                                            for i in C if d in inst.eligible[i]),
+                     f"c20_{d}_{w}")
 
         # account_balance
         for d in D:

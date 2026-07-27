@@ -93,15 +93,32 @@ class Solution:
         return dist, emis
 
     def objective(self, lam: dict[int, float]) -> float:
+        """Operating cost plus the priced stock drawn at each depot.
+
+        At a fixed price the stock term is sum_d lambda_d * (demand assigned
+        to d), which is sum_i q_i * lambda_{d(i)}: moving a customer from a
+        scarce depot to an abundant one is worth q_i times the price gap,
+        against whatever routing detour it costs.
+        """
         total = 0.0
+        ec = getattr(self.inst, "emission_cost", 0.0)
         for d in self.routes:
             dist, emis = self.depot_metrics(d)
-            total += dist + lam.get(d, 0.0) * emis
+            total += dist + ec * emis
+        for d, drawn in self.drawn_stock().items():
+            total += lam.get(d, 0.0) * drawn
         total += len(self.unassigned) * 1e6  # heavy penalty: every customer must be served
         return total
 
+    def drawn_stock(self) -> dict[int, float]:
+        """Demand assigned to each depot, which is the stock it must hold."""
+        return {d: sum(self.demand[i] for r in routes for i in r)
+                for d, routes in self.routes.items()}
+
+    # Retained under its former name: the coordination layer asks for the
+    # quantity each depot draws from its allocation, which is now demand.
     def emissions(self) -> dict[int, float]:
-        return {d: self.depot_metrics(d)[1] for d in self.routes}
+        return self.drawn_stock()
 
 
 def _greedy_initial(inst: Instance, demand: dict[int, float], rng: random.Random) -> Solution:

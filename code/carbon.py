@@ -62,26 +62,27 @@ def route_emission(depot, route: list, capacity: float) -> float:
     return e
 
 
-def reference_emission_per_depot(depots, customers) -> dict:
-    by_depot: dict[int, list] = {}
+def reference_demand_per_depot(depots, customers) -> dict:
+    """Expected demand of each depot's home customers, which is the natural
+    scale for the stock it should hold. Unlike a routing construction this
+    does not depend on any algorithm, and allocating the expected total
+    leaves roughly half the scenarios short and half long, so the
+    rebalancing mechanism is active without further calibration."""
+    ref: dict[int, float] = {d.idx: 0.0 for d in depots}
     for c in customers:
-        by_depot.setdefault(c.home_depot, []).append(c)
-    E0 = {}
-    for d in depots:
-        members = by_depot.get(d.idx, [])
-        routes = angle_sweep_routes(d, members, d.capacity)
-        E0[d.idx] = sum(route_emission(d, r, d.capacity) for r in routes)
-    return E0
+        ref[c.home_depot] = ref.get(c.home_depot, 0.0) + c.base_demand
+    return ref
 
 
-def corporate_budget(E0_by_depot: dict, gamma_B: float):
-    """eq. (budget_stringency): B^corp = gamma_B * E^0, with the reference
-    per-depot allocation proportional to E0 and box bounds at 45%/160% of
-    that allocation (tex, subsec:experimental_setup)."""
-    E0_total = sum(E0_by_depot.values())
-    if E0_total <= 0:
-        raise ValueError("total reference emission must be strictly positive")
-    B_corp = gamma_B * E0_total
-    alloc = {d: B_corp * e / E0_total for d, e in E0_by_depot.items()}
+def corporate_stock(ref_by_depot: dict, gamma_B: float):
+    """Total stock B^corp = gamma_B * (expected total demand), split across
+    depots in proportion to their expected home demand, with responsibility
+    bounds at 45% and 160% of that split. gamma_B is a service-cover factor:
+    below one the network is short in expectation, above one it is long."""
+    ref_total = sum(ref_by_depot.values())
+    if ref_total <= 0:
+        raise ValueError("total reference demand must be strictly positive")
+    B_corp = gamma_B * ref_total
+    alloc = {d: B_corp * r / ref_total for d, r in ref_by_depot.items()}
     bounds = {d: (BUDGET_LOWER_FRAC * a, BUDGET_UPPER_FRAC * a) for d, a in alloc.items()}
     return B_corp, alloc, bounds
